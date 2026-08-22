@@ -1,74 +1,10 @@
 {
-  "dateLabel": "Sat Aug 22",
-  "updatedAt": "2026-08-22T04:06:31.404Z",
-  "gradeStatus": "No changes",
-  "grades": [
-    {
-      "course": "Anatomy",
-      "display": "100% A",
-      "percent": 100,
-      "letter": "A",
-      "change": ""
-    },
-    {
-      "course": "Biology",
-      "display": "105% A",
-      "percent": 105,
-      "letter": "A",
-      "change": ""
-    },
-    {
-      "course": "English",
-      "display": "85% B",
-      "percent": 85,
-      "letter": "B",
-      "change": ""
-    },
-    {
-      "course": "Geometry",
-      "display": "0% F",
-      "percent": 0,
-      "letter": "F",
-      "change": ""
-    },
-    {
-      "course": "Digital Bus",
-      "display": "100% A",
-      "percent": 100,
-      "letter": "A",
-      "change": ""
-    },
-    {
-      "course": "Chorus",
-      "display": "NG",
-      "percent": null,
-      "letter": "NG",
-      "change": ""
-    },
-    {
-      "course": "World Hist",
-      "display": "100% A",
-      "percent": 100,
-      "letter": "A",
-      "change": ""
-    },
-    {
-      "course": "Study Hall",
-      "display": "NG",
-      "percent": null,
-      "letter": "NG",
-      "change": ""
-    }
-  ],
-  "assignments": [
-    {
-      "day": "MON Aug 24",
-      "time": "11:59 PM",
-      "course": "English",
-      "title": "Summer Assignment 2026"
-    }
-  ],
+  "dateLabel": "Latest Update",
+  "updatedAt": "2026-08-22T12:06:20.413Z",
+  "gradeStatus": "Current grades",
+  "grades": [],
+  "assignments": [],
   "activityStatus": "Nothing new",
   "activity": [],
-  "message": "No new grades, no new drama—Eli’s academic life is basically frozen in time. Geometry is still out here chilling at 0% like it’s on summer break forever, but everything else is flexing A-game dominance. Keep coasting on those perfect scores, but maybe toss Geometry a life raft soon."
+  "message": "No new grades, no new news—your Focus is on vacation right now. Guess even the school servers needed a break from your “hard work.” Check back when the system decides to wake up."
 }
