@@ -1,10 +1,74 @@
 {
-  "dateLabel": "Latest Update",
-  "updatedAt": "2026-08-22T12:44:00.938Z",
-  "gradeStatus": "Current grades",
-  "grades": [],
-  "assignments": [],
+  "dateLabel": "Sat Aug 22",
+  "updatedAt": "2026-08-22T13:26:11.373Z",
+  "gradeStatus": "No changes",
+  "grades": [
+    {
+      "course": "Anatomy",
+      "display": "100% A",
+      "percent": 100,
+      "letter": "A",
+      "change": ""
+    },
+    {
+      "course": "Biology",
+      "display": "105% A",
+      "percent": 105,
+      "letter": "A",
+      "change": ""
+    },
+    {
+      "course": "English",
+      "display": "85% B",
+      "percent": 85,
+      "letter": "B",
+      "change": ""
+    },
+    {
+      "course": "Geometry",
+      "display": "0% F",
+      "percent": 0,
+      "letter": "F",
+      "change": ""
+    },
+    {
+      "course": "Digital Bus",
+      "display": "100% A",
+      "percent": 100,
+      "letter": "A",
+      "change": ""
+    },
+    {
+      "course": "Chorus",
+      "display": "NG",
+      "percent": null,
+      "letter": "NG",
+      "change": ""
+    },
+    {
+      "course": "World Hist",
+      "display": "100% A",
+      "percent": 100,
+      "letter": "A",
+      "change": ""
+    },
+    {
+      "course": "Study Hall",
+      "display": "NG",
+      "percent": null,
+      "letter": "NG",
+      "change": ""
+    }
+  ],
+  "assignments": [
+    {
+      "day": "MON Aug 24",
+      "time": "11:59 PM",
+      "course": "English",
+      "title": "Summer Assignment 2026"
+    }
+  ],
   "activityStatus": "Nothing new",
   "activity": [],
-  "message": "Looks like nothing new popped up, Eli—your grades are just chilling in witness protection right now. No fresh wins, no fresh Ls… basically academic limbo. Guess we’re just waiting for the next plot twist."
+  "message": "No new grades, no new drama—your report card is on cruise control. Geometry is still looking like it’s skipping school, but everything else is straight flexing. Keep coasting, but maybe toss Geometry a life raft before it sinks the vibe."
 }
