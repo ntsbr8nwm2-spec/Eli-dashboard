@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#163b65">
+<title>Eli School Dashboard</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--ink:#172033;--muted:#6f7d90;--navy:#15395f;--blue:#2877ba;--line:#e9eef4;--good:#17834a;--warn:#c58a12;--bad:#c64249;--neutral:#748196}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#edf4fb 0,#f7f9fc 420px);color:var(--ink)}
+.hero{padding:calc(30px + env(safe-area-inset-top)) 22px 30px;background:linear-gradient(135deg,#112f50,#286ca5);color:#fff;border-radius:0 0 30px 30px;box-shadow:0 12px 34px rgba(20,55,90,.18)}
+.kicker{font-size:12px;font-weight:800;letter-spacing:1.7px;opacity:.7}.hero h1{font-size:36px;line-height:1;margin:9px 0 8px}.date{font-size:17px;opacity:.92}.updated{font-size:12px;opacity:.7;margin-top:16px}
+.wrap{max-width:900px;margin:0 auto;padding:20px 16px calc(44px + env(safe-area-inset-bottom))}.card{background:var(--card);border-radius:22px;padding:18px;margin-bottom:16px;box-shadow:0 8px 30px rgba(25,52,82,.07)}
+.head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.head h2{margin:0;font-size:20px}.status{font-size:12px;font-weight:750;color:var(--muted);text-align:right}
+.grades{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.grade{border:1px solid var(--line);background:#f8fafc;border-radius:16px;padding:13px;min-height:104px;position:relative}.gradeTop{display:flex;justify-content:space-between;gap:8px}.course{font-size:14px;font-weight:750;line-height:1.25}.letter{font-size:21px;font-weight:900}.value{margin-top:10px;font-size:14px;font-weight:700;color:#647286}.bar{height:5px;border-radius:8px;background:#e7edf3;overflow:hidden;margin-top:10px}.fill{height:100%;border-radius:8px;background:currentColor}.a{color:var(--good)}.b{color:var(--blue)}.c{color:var(--warn)}.low{color:var(--bad)}.ng{color:var(--neutral)}.badge{position:absolute;right:8px;bottom:7px;background:var(--navy);color:#fff;border-radius:12px;padding:3px 7px;font-size:9px;font-weight:900;letter-spacing:.5px}
+.day{font-size:12px;font-weight:900;letter-spacing:1px;color:var(--muted);margin:17px 2px 7px}.day:first-child{margin-top:0}.assignment{display:grid;grid-template-columns:78px 1fr;gap:12px;padding:13px 3px;border-bottom:1px solid var(--line)}.assignment:last-child{border-bottom:0}.time{font-size:13px;font-weight:850;color:#24669d}.assignmentCourse{font-size:11px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:#24669d;margin-bottom:3px}.title{font-size:15px;font-weight:650;line-height:1.35}.activity{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;line-height:1.4}.activity:last-child{border-bottom:0}.empty{font-size:14px;color:var(--muted);padding:4px 0}
+.message{background:linear-gradient(135deg,#fff6db,#fffaf0);border:1px solid #f2dfad}.messageLabel{font-size:12px;font-weight:900;letter-spacing:.7px;color:#8a6817;margin-bottom:7px}.messageText{font-size:15px;line-height:1.45}.foot{text-align:center;color:#9aa5b3;font-size:11px;margin-top:3px}
+@media(min-width:700px){.grades{grid-template-columns:repeat(4,minmax(0,1fr))}.wrap{padding-top:26px}}
+</style>
+</head>
+<body>
+<header class="hero"><div class="kicker">SCHOOL DASHBOARD</div><h1>🎓 ELI</h1><div class="date" id="schoolDate">Latest school update</div><div class="updated" id="updated">Loading…</div></header>
+<main class="wrap">
+<section class="card"><div class="head"><h2>Grades</h2><div class="status" id="gradeStatus">Current grades</div></div><div class="grades" id="grades"></div></section>
+<section class="card"><div class="head"><h2>📅 Canvas Due</h2><div class="status" id="dueCount"></div></div><div id="assignments"></div></section>
+<section class="card"><div class="head"><h2>📰 Activity</h2><div class="status" id="activityStatus"></div></div><div id="activity"></div></section>
+<section class="card message" id="messageCard" hidden><div class="messageLabel">😎 MESSAGE OF THE DAY</div><div class="messageText" id="message"></div></section>
+<div class="foot">Focus + Canvas school monitor</div>
+</main>
+<script>
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function gradeClass(g){const l=String(g.letter||'').toUpperCase();if(l.startsWith('A'))return'a';if(l.startsWith('B'))return'b';if(l.startsWith('C'))return'c';if(l.startsWith('D')||l.startsWith('F'))return'low';return'ng'}
+function render(d){document.getElementById('schoolDate').textContent=d.dateLabel||'Latest school update';document.getElementById('gradeStatus').textContent=d.gradeStatus||'Current grades';const when=d.updatedAt?new Date(d.updatedAt):new Date();document.getElementById('updated').textContent='Updated '+when.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+const grades=document.getElementById('grades');grades.innerHTML=(d.grades||[]).map(g=>{const pct=Number.isFinite(Number(g.percent))?Math.max(0,Math.min(100,Number(g.percent))):null;return `<div class="grade ${gradeClass(g)}"><div class="gradeTop"><div class="course">${esc(g.course)}</div><div class="letter">${esc(g.letter||'NG')}</div></div><div class="value">${esc(g.display||g.letter||'NG')}</div>${pct===null?'':`<div class="bar"><div class="fill" style="width:${pct}%"></div></div>`}${g.change?`<div class="badge">${esc(g.change)}</div>`:''}</div>`}).join('')||'<div class="empty">No grade data yet.</div>';
+const assignments=d.assignments||[];document.getElementById('dueCount').textContent=assignments.length?`${assignments.length} upcoming`:'Nothing due';const a=document.getElementById('assignments');let last='';a.innerHTML=assignments.map(x=>{let h='';if(x.day!==last){last=x.day;h=`<div class="day">${esc(x.day)}</div>`}return h+`<div class="assignment"><div class="time">${esc(x.time)}</div><div><div class="assignmentCourse">${esc(x.course||'Canvas')}</div><div class="title">${esc(x.title)}</div></div></div>`}).join('')||'<div class="empty">No unfinished Canvas work showing right now.</div>';
+const activity=d.activity||[];document.getElementById('activityStatus').textContent=d.activityStatus||'Nothing new';document.getElementById('activity').innerHTML=activity.length?activity.map(x=>`<div class="activity">${esc(x)}</div>`).join(''):'<div class="empty">Nothing new</div>';
+if(d.message){document.getElementById('messageCard').hidden=false;document.getElementById('message').textContent=d.message}else document.getElementById('messageCard').hidden=true}
+fetch('data.json?t='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('No data yet');return r.json()}).then(render).catch(()=>{document.getElementById('updated').textContent='Run the school check once to publish the first update.';document.getElementById('grades').innerHTML='<div class="empty">Waiting for first update.</div>';document.getElementById('assignments').innerHTML='<div class="empty">Waiting for first update.</div>';document.getElementById('activity').innerHTML='<div class="empty">Waiting for first update.</div>'});
+</script>
+</body>
+</html>
