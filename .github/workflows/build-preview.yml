@@ -28,3 +28,4 @@ jobs:
             git commit -m "Build dashboard preview image"
             git push
           fi
+# trigger
