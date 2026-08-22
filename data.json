@@ -1,10 +1,98 @@
 {
-  "dateLabel": "Waiting for first school update",
-  "updatedAt": null,
-  "gradeStatus": "Current grades",
-  "grades": [],
-  "assignments": [],
+  "dateLabel": "Fri Aug 21",
+  "updatedAt": "2026-08-22T03:05:09.851Z",
+  "gradeStatus": "No changes",
+  "grades": [
+    {
+      "course": "Anatomy",
+      "display": "100% A",
+      "percent": 100,
+      "letter": "A",
+      "change": ""
+    },
+    {
+      "course": "Biology",
+      "display": "105% A",
+      "percent": 105,
+      "letter": "A",
+      "change": ""
+    },
+    {
+      "course": "English",
+      "display": "85% B",
+      "percent": 85,
+      "letter": "B",
+      "change": ""
+    },
+    {
+      "course": "Geometry",
+      "display": "0% F",
+      "percent": 0,
+      "letter": "F",
+      "change": ""
+    },
+    {
+      "course": "Digital Bus",
+      "display": "100% A",
+      "percent": 100,
+      "letter": "A",
+      "change": ""
+    },
+    {
+      "course": "Chorus",
+      "display": "NG",
+      "percent": null,
+      "letter": "NG",
+      "change": ""
+    },
+    {
+      "course": "World Hist",
+      "display": "100% A",
+      "percent": 100,
+      "letter": "A",
+      "change": ""
+    },
+    {
+      "course": "Study Hall",
+      "display": "NG",
+      "percent": null,
+      "letter": "NG",
+      "change": ""
+    }
+  ],
+  "assignments": [
+    {
+      "day": "TODAY",
+      "time": "11:59 PM",
+      "course": "English",
+      "title": "Binder- tabs and requirements"
+    },
+    {
+      "day": "TODAY",
+      "time": "11:59 PM",
+      "course": "English",
+      "title": "Origami Fortune Teller - C.A.P. Personal Writing"
+    },
+    {
+      "day": "TODAY",
+      "time": "11:59 PM",
+      "course": "Biology",
+      "title": "Water Molecule Properties of Water Questions"
+    },
+    {
+      "day": "TODAY",
+      "time": "11:59 PM",
+      "course": "Biology",
+      "title": "Properties of Water Amoeba Sisters"
+    },
+    {
+      "day": "MON Aug 24",
+      "time": "11:59 PM",
+      "course": "English",
+      "title": "Summer Assignment 2026"
+    }
+  ],
   "activityStatus": "Nothing new",
   "activity": [],
-  "message": ""
+  "message": "No new grades, no new news—your report is basically a screensaver right now. Geometry is still sitting there like a brick, silently judging you, but everything else is cruise control perfection. Keep coasting… but maybe throw Geometry a lifeline before it drags your vibe down."
 }
