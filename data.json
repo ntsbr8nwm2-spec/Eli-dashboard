@@ -1,7 +1,7 @@
 {
-  "dateLabel": "Sat Aug 22",
-  "updatedAt": "2026-08-22T16:13:22.395Z",
-  "gradeStatus": "No changes",
+  "dateLabel": "As of 08/22/2026",
+  "updatedAt": "2026-08-23T02:33:18.365Z",
+  "gradeStatus": "Current grades",
   "grades": [
     {
       "course": "Anatomy",
@@ -26,8 +26,8 @@
     },
     {
       "course": "Geometry",
-      "display": "0% F",
-      "percent": 0,
+      "display": "50% F",
+      "percent": 50,
       "letter": "F",
       "change": ""
     },
