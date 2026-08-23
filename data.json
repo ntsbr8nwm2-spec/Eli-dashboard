@@ -1,7 +1,7 @@
 {
-  "dateLabel": "As of 08/23/2026",
-  "updatedAt": "2026-08-23T14:12:45.341Z",
-  "gradeStatus": "Current grades",
+  "dateLabel": "Sun Aug 23",
+  "updatedAt": "2026-08-23T21:11:41.699Z",
+  "gradeStatus": "🚨 1 change",
   "grades": [
     {
       "course": "Anatomy",
@@ -26,10 +26,10 @@
     },
     {
       "course": "Geometry",
-      "display": "50% F",
+      "display": "0% F→50% F",
       "percent": 50,
       "letter": "F",
-      "change": ""
+      "change": "CHANGED"
     },
     {
       "course": "Digital Bus",
@@ -60,15 +60,8 @@
       "change": ""
     }
   ],
-  "assignments": [
-    {
-      "day": "MON Aug 24",
-      "time": "11:59 PM",
-      "course": "English",
-      "title": "Summer Assignment 2026"
-    }
-  ],
+  "assignments": [],
   "activityStatus": "Nothing new",
   "activity": [],
-  "message": "No new grades, no new news—Eli’s academic vibe is straight-up on cruise control. Geometry is still haunting you at 0%, but hey, at least the rest of your classes are carrying the team. Knock out that English summer assignment before it ambushes you Monday night."
+  "message": "Geometry waking up from a coma to a 50% is… progress, I guess. At least it’s not a flatline anymore. Keep climbing, because the rest of your grades are straight-up legendary and Geometry is the only one making you look mortal."
 }
