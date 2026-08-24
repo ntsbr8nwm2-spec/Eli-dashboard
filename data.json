@@ -1,14 +1,14 @@
 {
   "dateLabel": "Mon, Aug 24",
-  "updatedAt": "2026-08-24T17:42:19.572Z",
-  "gradeStatus": "Current grades",
+  "updatedAt": "2026-08-24T19:48:14.197Z",
+  "gradeStatus": "🚨 1 change",
   "grades": [
     {
       "course": "Anatomy",
-      "display": "70% C",
-      "percent": 70,
+      "display": "73% C",
+      "percent": 73,
       "letter": "C",
-      "change": ""
+      "change": "CHANGED"
     },
     {
       "course": "Biology",
@@ -108,10 +108,37 @@
       "time": "11:05 AM",
       "course": "Canvas",
       "title": "Properties of Molecules Building Activity (BIOLOGY 1..."
+    },
+    {
+      "day": "FRI AUG 28",
+      "time": "2:30 PM",
+      "course": "Digital Bus",
+      "title": "Newscast Critiques"
+    },
+    {
+      "day": "FRI AUG 28",
+      "time": "2:30 PM",
+      "course": "Canvas",
+      "title": "Newscast Critiques"
+    },
+    {
+      "day": "MON AUG 31",
+      "time": "11:59 PM",
+      "course": "Digital Bus",
+      "title": "Review Questions for \"Tips for Shooting Better Video with..."
+    },
+    {
+      "day": "MON AUG 31",
+      "time": "11:59 PM",
+      "course": "Canvas",
+      "title": "Review Questions for \"Tips for Shooting Better Video with..."
     }
   ],
-  "activityStatus": "Up to date",
+  "activityStatus": "3 new",
   "activity": [
+    "Anatomy — Bell ringer: Which systems work together for movement of the body? · 3.3/5 · 66% · D · 08/24 2:25 PM",
+    "Anatomy — Exit ticket: What is the anatomical position · 5/5 · 100% · A · 08/24 2:24 PM",
+    "Anatomy — Exit ticket: Name 5/8 necessary functions for life · 5/5 · 100% · A · 08/24 2:16 PM",
     "Anatomy — Check Your Understanding 1.2-1 Structural and Functional Organization of the Body · 18/40 · 45% · F · 08/24 10:29 AM",
     "Anatomy — Check Your Understanding 1.1-1 Introducing Anatomy and Physiology · 10.5/10 · 105% · A · 08/24 9:57 AM",
     "Biology — Properties of Water Amoeba Sisters · 10/10 · A · 08/24 3:44 AM",
@@ -123,10 +150,7 @@
     "Anatomy — Bell ringer: Name 3 body systems · 5/5 · 100% · A · 08/19 9:35 AM",
     "Anatomy — Exit Ticket: What is the definition of Physiology? · 5/5 · 100% · A · 08/19 9:24 AM",
     "Biology — 3. The Blind Men and the Elephant · 10/10 · A · 08/18 11:36 AM",
-    "Biology — Homework Assignment for 8/10 - 8/11 · 10/10 · A · 08/18 11:30 AM",
-    "Anatomy — Bell Ringer: What is the definition of Anatomy? · 5/5 · 100% · A · 08/18 9:08 AM",
-    "Anatomy — Unit 1- Introduction to Anatomy and Physiology Preassessment Questions · 6/6 · 100% · A · 08/17 11:19 PM",
-    "Biology — 2. CPALMS Tutorial_ Defining What is Science _What is Not Science.docx · 10/10 · A · 08/17 10:46 AM"
+    "Biology — Homework Assignment for 8/10 - 8/11 · 10/10 · A · 08/18 11:30 AM"
   ],
   "message": "Geometry waking up from a coma to a 50% is… progress, I guess. At least it’s not a flatline anymore. Keep climbing, because the rest of your grades are straight-up legendary and Geometry is the only one making you look mortal."
 }
