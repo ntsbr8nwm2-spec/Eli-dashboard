@@ -7,6 +7,7 @@
 // One-time secure pilot restore support.
 // Restored pilot run.
 // Safe failure-detail capture.
+// Grade stderr capture.
 import fs from 'node:fs/promises';
 
 const SUPABASE_URL='https://vihtghmtnnozflnmecis.supabase.co';
@@ -103,6 +104,10 @@ async function fail(){
   const studentId=process.env.STUDENT_ID;
   if(!studentId) return;
   let error=String(process.env.WORKER_ERROR||'School monitor failed');
+  try{
+    const stderr=await fs.readFile(`${WORKDIR}/grade-stderr.txt`,'utf8');
+    if(stderr.trim()) error+=`; stderr=${scrub(stderr)}`;
+  }catch{}
   try{
     const auth=JSON.parse(await fs.readFile(`${WORKDIR}/auth-debug.json`,'utf8'));
     if(auth?.error) error+=`; auth=${scrub(auth.error)}`;
