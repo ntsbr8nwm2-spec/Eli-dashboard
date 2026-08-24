@@ -1,0 +1,105 @@
+name: Parent dashboard worker
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'parent-worker-client.mjs'
+      - '.github/workflows/parent-worker.yml'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: parent-dashboard-worker
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      PARENT_WORKDIR: /tmp/parent-school-run
+
+    steps:
+      - name: Check out monitor engine
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Lease next private parent dashboard
+        id: lease
+        run: node parent-worker-client.mjs lease
+
+      - name: Prepare isolated student workspace
+        if: env.NO_PARENT_JOB != 'true'
+        run: |
+          cp school-monitor.mjs canvas-only.mjs canvas-guard.mjs focus-news-v2.mjs sanitize-dashboard.mjs "$PARENT_WORKDIR"/
+          chmod 700 "$PARENT_WORKDIR"
+          chmod 600 "$PARENT_WORKDIR"/*.json || true
+
+      - name: Install Playwright
+        if: env.NO_PARENT_JOB != 'true'
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Run Focus grades
+        if: env.NO_PARENT_JOB != 'true'
+        id: grades
+        working-directory: /tmp/parent-school-run
+        continue-on-error: true
+        run: node school-monitor.mjs
+
+      - name: Save previous Canvas assignments
+        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success'
+        working-directory: /tmp/parent-school-run
+        run: node canvas-guard.mjs before
+
+      - name: Run Canvas assignments
+        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success'
+        id: canvas
+        working-directory: /tmp/parent-school-run
+        continue-on-error: true
+        run: node canvas-only.mjs
+
+      - name: Confirm empty Canvas result
+        if: env.NO_PARENT_JOB != 'true' && steps.canvas.outcome == 'success'
+        working-directory: /tmp/parent-school-run
+        run: node canvas-guard.mjs after
+
+      - name: Run Focus activity
+        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success'
+        id: news
+        working-directory: /tmp/parent-school-run
+        continue-on-error: true
+        run: |
+          for attempt in 1 2 3; do
+            echo "Focus News attempt $attempt"
+            if node focus-news-v2.mjs; then exit 0; fi
+            if [ "$attempt" -lt 3 ]; then sleep 4; fi
+          done
+          exit 1
+
+      - name: Sanitize dashboard data
+        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success' && steps.news.outcome == 'success'
+        working-directory: /tmp/parent-school-run
+        run: node sanitize-dashboard.mjs
+
+      - name: Publish private dashboard
+        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success' && steps.news.outcome == 'success'
+        run: node parent-worker-client.mjs publish
+
+      - name: Record failed private run
+        if: always() && env.NO_PARENT_JOB != 'true' && (steps.grades.outcome == 'failure' || steps.canvas.outcome == 'failure' || steps.news.outcome == 'failure')
+        env:
+          WORKER_ERROR: One or more school collectors failed. Review the GitHub Action diagnostics; credentials were not logged.
+        run: node parent-worker-client.mjs fail
+
+      - name: Mark collector failure
+        if: env.NO_PARENT_JOB != 'true' && (steps.grades.outcome == 'failure' || steps.canvas.outcome == 'failure' || steps.news.outcome == 'failure')
+        run: exit 1
