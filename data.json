@@ -1,6 +1,6 @@
 {
   "dateLabel": "Sun, Aug 23",
-  "updatedAt": "2026-08-24T02:11:39.600Z",
+  "updatedAt": "2026-08-24T02:53:20.051Z",
   "gradeStatus": "Current grades",
   "grades": [
     {
@@ -60,7 +60,14 @@
       "change": ""
     }
   ],
-  "assignments": [],
+  "assignments": [
+    {
+      "day": "TOMORROW",
+      "time": "11:59 PM",
+      "course": "Feed",
+      "title": "Summer Assignment 2026 August 2026 26 27 28 29 30 31 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 1 2 3 4 5 CALENDARS ELI BROWN Open ELI BROWN Color Picker Advanced Academics at Coral Glades Open Advanced Academics at Coral Glades Color Picker AICE ENG LANG AS-Ackerman Open AICE ENG LANG AS-Ackerman Color Picker ANAT PHYSIO HON-Rubiano Open ANAT PHYSIO HON-Rubiano Color Picker AP WORLD HIST:MODERN-Brissett Open AP WORLD HIST:MODERN-Brissett Color Picker BIOLOGY 1 HON-Zaino Open BIOLOGY 1 HON-Zaino Color Picker Class of 2029 Open Class of 2029 Color Picker Coral Glades Debate Open Coral Glades Debate Color Picker DIGITAL BUS FDNS-Alonso Open DIGITAL BUS FDNS-Alonso Color Picker GEOMETRY HON-Beniga Open GEOMETRY HON-Beniga Color Picker IT FUNDAMENTALS-Ferro Open IT FUNDAMENTALS-Ferro Color Picker NC STUDY HALL 1-Rubiano Open NC STUDY HALL 1-Rubiano Color Picker UNDATED"
+    }
+  ],
   "activityStatus": "Nothing new",
   "activity": [],
   "message": "Geometry waking up from a coma to a 50% is… progress, I guess. At least it’s not a flatline anymore. Keep climbing, because the rest of your grades are straight-up legendary and Geometry is the only one making you look mortal."

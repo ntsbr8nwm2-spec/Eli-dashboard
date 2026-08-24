@@ -1,0 +1,38 @@
+{
+  "at": "2026-08-24T02:53:20.054Z",
+  "errors": [
+    "Focus activity: Error: page.goto: Navigation to \"https://browardschools.focusschoolsoftware.com/focus/Modules.php?force_package=SIS&modname=Grades/StudentRCGrades.php&details=false\" is interrupted by another navigation to \"https://login.microsoftonline.com/eeacb5cb-5370-4358-a96a-a3783c95d422/saml2\"\nCall log:\n  - navigating to \"https://browardschools.focusschoolsoftware.com/focus/Modules.php?force_package=SIS&modname=Grades/StudentRCGrades.php&details=false\", waiting until \"domcontentloaded\"\n"
+  ],
+  "news": {
+    "success": false,
+    "currentCount": 0,
+    "newCount": 0
+  },
+  "canvas": {
+    "success": true,
+    "parsedCount": 2,
+    "upcomingCount": 1
+  },
+  "trace": [
+    {
+      "stage": "extras-final",
+      "at": "2026-08-24T02:53:20.052Z",
+      "page": {
+        "host": "browardschools.instructure.com",
+        "path": "/calendar"
+      },
+      "title": "Calendar",
+      "frameCount": 3
+    },
+    {
+      "stage": "extras-final",
+      "at": "2026-08-24T02:53:20.053Z",
+      "page": {
+        "host": "browardschools.instructure.com",
+        "path": "/calendar"
+      },
+      "title": "Calendar",
+      "frameCount": 3
+    }
+  ]
+}
