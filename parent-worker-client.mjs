@@ -6,6 +6,7 @@
 // Lease ambiguity fix retry.
 // One-time secure pilot restore support.
 // Restored pilot run.
+// Safe failure-detail capture.
 import fs from 'node:fs/promises';
 
 const SUPABASE_URL='https://vihtghmtnnozflnmecis.supabase.co';
@@ -40,6 +41,16 @@ async function appendEnv(name,value){
   if(!p) return;
   const marker=`EOF_${Math.random().toString(36).slice(2)}`;
   await fs.appendFile(p,`${name}<<${marker}\n${String(value??'')}\n${marker}\n`);
+}
+
+function scrub(value){
+  let text=String(value||'');
+  for(const secret of [process.env.BCPS_USERNAME,process.env.BCPS_PASSWORD]){
+    if(secret) text=text.split(secret).join('[redacted]');
+  }
+  text=text.replace(/https?:\/\/\S+/gi,'[url]');
+  text=text.replace(/[A-Za-z0-9_\-.]{40,}/g,'[redacted]');
+  return text.replace(/\s+/g,' ').trim().slice(0,320);
 }
 
 async function seedPilot(){
@@ -91,7 +102,14 @@ async function publish(){
 async function fail(){
   const studentId=process.env.STUDENT_ID;
   if(!studentId) return;
-  const error=String(process.env.WORKER_ERROR||'School monitor failed').slice(0,500);
+  let error=String(process.env.WORKER_ERROR||'School monitor failed');
+  try{
+    const auth=JSON.parse(await fs.readFile(`${WORKDIR}/auth-debug.json`,'utf8'));
+    if(auth?.error) error+=`; auth=${scrub(auth.error)}`;
+    const last=Array.isArray(auth?.trace)?auth.trace.at(-1):null;
+    if(last?.page?.host) error+=`; page=${scrub(`${last.page.host}${last.page.path||''}`)}`;
+  }catch{}
+  error=scrub(error).slice(0,500);
   await callWorker({action:'fail',student_id:studentId,error});
   console.log('[PARENT] Worker failure recorded without exposing school credentials.');
 }
