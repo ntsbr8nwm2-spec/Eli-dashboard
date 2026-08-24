@@ -46,7 +46,7 @@ jobs:
         if: env.NO_PARENT_JOB != 'true'
         run: |
           npm install --prefix "$PARENT_WORKDIR" --no-save playwright@1.55.0
-          npx playwright install --with-deps chromium
+          "$PARENT_WORKDIR/node_modules/.bin/playwright" install --with-deps chromium
 
       - name: Run Focus grades
         if: env.NO_PARENT_JOB != 'true'
