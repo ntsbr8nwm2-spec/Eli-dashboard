@@ -42,10 +42,10 @@ jobs:
           chmod 700 "$PARENT_WORKDIR"
           chmod 600 "$PARENT_WORKDIR"/*.json || true
 
-      - name: Install Playwright
+      - name: Install Playwright in isolated workspace
         if: env.NO_PARENT_JOB != 'true'
         run: |
-          npm install --no-save playwright@1.55.0
+          npm install --prefix "$PARENT_WORKDIR" --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
 
       - name: Run Focus grades
