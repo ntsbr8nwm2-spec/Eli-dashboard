@@ -94,6 +94,7 @@ button.primary{width:100%;border:0;border-radius:14px;padding:15px 16px;backgrou
         <button class="secondary danger" id="disconnectBcps" type="button" hidden>Disconnect saved school login</button>
       </div>
 
+      <button class="primary" id="openDashboard" type="button" hidden style="margin-top:15px">Open student dashboard</button>
       <button class="secondary" id="signOut" type="button">Sign out</button>
     </div>
 
@@ -139,6 +140,7 @@ function connectionUI(status){
   $('connectionBadge').classList.toggle('connected',connected);
   $('connectBcps').textContent=connected?'Update school login':'Connect school account';
   $('disconnectBcps').hidden=!connected;
+  $('openDashboard').hidden=!connected;
 }
 async function ensureStudent(user){
   const firstName=String(user?.user_metadata?.student_first_name||'Student').trim()||'Student';
@@ -146,6 +148,12 @@ async function ensureStudent(user){
   if(error) throw error;
   currentStudent=data;
   return data;
+}
+async function dashboardReady(){
+  const {data,error}=await supabase.rpc('get_my_student_dashboard');
+  if(error) return false;
+  const row=Array.isArray(data)?data[0]:data;
+  return Boolean(row?.dashboard_data && Object.keys(row.dashboard_data).length);
 }
 async function showAccount(user){
   $('authform').classList.add('hidden');
@@ -155,6 +163,11 @@ async function showAccount(user){
     const student=await ensureStudent(user);
     $('accountStudent').textContent=`${student.first_name}'s dashboard`;
     connectionUI(student.connection_status);
+    const managing=new URLSearchParams(location.search).get('manage')==='1';
+    if(student.connection_status==='connected' && !managing && await dashboardReady()){
+      location.replace('../parent/');
+      return;
+    }
   }catch(error){
     $('accountStudent').textContent='Student dashboard';
     message(error?.message||'Could not load the student profile.','bad','connectResult');
@@ -229,11 +242,13 @@ $('connectBcps').addEventListener('click',async()=>{
     currentStudent.connection_status='connected';
     connectionUI('connected');
     $('bcpsUsername').value=''; $('bcpsPassword').value='';
-    message('✅ School login securely saved. Next we’ll use it to build this student’s Focus + Canvas dashboard.','good','connectResult');
+    message('✅ School login securely saved. Your dashboard will open as soon as the first school update is ready.','good','connectResult');
   }catch(error){
     message(error?.message||'Could not securely save the school login.','bad','connectResult');
   }finally{ btn.disabled=false; if(currentStudent?.connection_status!=='connected')btn.textContent=old; }
 });
+
+$('openDashboard').addEventListener('click',()=>{ location.href='../parent/'; });
 
 $('disconnectBcps').addEventListener('click',async()=>{
   if(!currentStudent) return;
