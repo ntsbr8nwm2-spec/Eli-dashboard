@@ -1,14 +1,14 @@
 {
   "dateLabel": "Mon, Aug 24",
-  "updatedAt": "2026-08-24T14:47:46.213Z",
-  "gradeStatus": "🚨 1 change",
+  "updatedAt": "2026-08-24T15:36:11.765Z",
+  "gradeStatus": "Current grades",
   "grades": [
     {
       "course": "Anatomy",
       "display": "70% C",
       "percent": 70,
       "letter": "C",
-      "change": "CHANGED"
+      "change": ""
     },
     {
       "course": "Biology",
