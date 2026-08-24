@@ -78,7 +78,7 @@ button.primary{width:100%;border:0;border-radius:14px;padding:15px 16px;backgrou
           <div class="connectTitle">Connect BCPS</div>
           <div class="badge" id="connectionBadge">Not connected</div>
         </div>
-        <div class="secure">🔐 The school username and password are sent over HTTPS to Supabase and encrypted before storage. They are not written to GitHub or your public dashboard.</div>
+        <div class="secure">🔐 Your school username and password go through an authenticated Supabase backend and are encrypted before storage. They are never written to GitHub or the public dashboard.</div>
 
         <label for="bcpsUsername">Student BCPS username</label>
         <input id="bcpsUsername" type="text" autocomplete="username" placeholder="Student username" autocapitalize="none" spellcheck="false">
@@ -221,8 +221,11 @@ $('connectBcps').addEventListener('click',async()=>{
   if(!username||!password){ message('Enter the student BCPS username and password.','bad','connectResult'); return; }
   const btn=$('connectBcps'); btn.disabled=true; const old=btn.textContent; btn.textContent='Encrypting…';
   try{
-    const {error}=await supabase.rpc('save_school_credentials',{p_student_id:currentStudent.id,p_username:username,p_password:password});
+    const {data,error}=await supabase.functions.invoke('school-credentials',{
+      body:{action:'save',studentId:currentStudent.id,username,password}
+    });
     if(error) throw error;
+    if(data?.error) throw new Error(data.error);
     currentStudent.connection_status='connected';
     connectionUI('connected');
     $('bcpsUsername').value=''; $('bcpsPassword').value='';
@@ -236,8 +239,11 @@ $('disconnectBcps').addEventListener('click',async()=>{
   if(!currentStudent) return;
   const btn=$('disconnectBcps'); btn.disabled=true;
   try{
-    const {error}=await supabase.rpc('disconnect_school_credentials',{p_student_id:currentStudent.id});
+    const {data,error}=await supabase.functions.invoke('school-credentials',{
+      body:{action:'disconnect',studentId:currentStudent.id}
+    });
     if(error) throw error;
+    if(data?.error) throw new Error(data.error);
     currentStudent.connection_status='not_connected';
     connectionUI('not_connected');
     message('Saved school login removed.','good','connectResult');
