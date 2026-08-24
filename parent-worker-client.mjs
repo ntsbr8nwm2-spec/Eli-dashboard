@@ -5,6 +5,7 @@
 // Diagnostic retry.
 // Lease ambiguity fix retry.
 // One-time secure pilot restore support.
+// Restored pilot run.
 import fs from 'node:fs/promises';
 
 const SUPABASE_URL='https://vihtghmtnnozflnmecis.supabase.co';
