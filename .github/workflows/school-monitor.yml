@@ -3,7 +3,7 @@ name: Unattended school monitor
 on:
   workflow_dispatch:
   schedule:
-    - cron: '34 1 24 8 *'
+    - cron: '*/5 * * * *'
   push:
     paths:
       - 'school-monitor.mjs'
