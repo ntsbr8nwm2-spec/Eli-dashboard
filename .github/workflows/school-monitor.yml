@@ -7,6 +7,7 @@ on:
   push:
     paths:
       - 'school-monitor.mjs'
+      - 'school-extras.mjs'
       - '.github/workflows/school-monitor.yml'
 
 permissions:
@@ -19,7 +20,7 @@ concurrency:
 jobs:
   monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Check out dashboard repository
@@ -35,7 +36,7 @@ jobs:
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Run unattended Focus monitor
+      - name: Run unattended Focus grade monitor
         id: monitor
         continue-on-error: true
         env:
@@ -43,7 +44,16 @@ jobs:
           BCPS_PASSWORD: ${{ secrets.BCPS_PASSWORD }}
         run: node school-monitor.mjs
 
-      - name: Commit dashboard or safe diagnostics
+      - name: Run Focus activity and Canvas collectors
+        id: extras
+        if: steps.monitor.outcome == 'success'
+        continue-on-error: true
+        env:
+          BCPS_USERNAME: ${{ secrets.BCPS_USERNAME }}
+          BCPS_PASSWORD: ${{ secrets.BCPS_PASSWORD }}
+        run: node school-extras.mjs
+
+      - name: Commit dashboard, state, or safe diagnostics
         if: always()
         run: |
           git config user.name "github-actions[bot]"
@@ -51,19 +61,21 @@ jobs:
 
           git add -A -- data.json
 
-          if [ -e auth-debug.json ] || git ls-files --error-unmatch auth-debug.json >/dev/null 2>&1; then
-            git add -A -- auth-debug.json
-          fi
+          for file in school-state.json auth-debug.json extras-debug.json; do
+            if [ -e "$file" ] || git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
+              git add -A -- "$file"
+            fi
+          done
 
           if git diff --cached --quiet; then
-            echo "No dashboard or diagnostic changes to commit"
+            echo "No dashboard, state, or diagnostic changes to commit"
           else
             git commit -m "Update unattended school monitor result"
             git pull --rebase origin main
             git push
           fi
 
-      - name: Upload safe auth diagnostics on failure
+      - name: Upload Focus auth diagnostics on failure
         if: steps.monitor.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
@@ -72,6 +84,19 @@ jobs:
           if-no-files-found: ignore
           retention-days: 3
 
-      - name: Mark monitor failure
+      - name: Upload extras diagnostics on failure
+        if: steps.extras.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: school-extras-debug
+          path: extras-debug.json
+          if-no-files-found: ignore
+          retention-days: 3
+
+      - name: Mark Focus grade failure
         if: steps.monitor.outcome == 'failure'
+        run: exit 1
+
+      - name: Mark extras failure
+        if: steps.extras.outcome == 'failure'
         run: exit 1
