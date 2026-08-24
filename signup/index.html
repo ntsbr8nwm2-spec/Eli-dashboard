@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#173b63">
+<title>School Dashboard Setup</title>
+<style>
+:root{--navy:#173b63;--blue:#2b72aa;--ink:#182237;--muted:#6f7d90;--line:#e2e8f0;--bg:#f3f7fb;--card:#fff;--good:#16794c}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#edf4fb,#f7f9fc 420px);color:var(--ink)}
+.hero{padding:calc(20px + env(safe-area-inset-top)) 20px 22px;background:linear-gradient(135deg,#112f50,#286ca5);color:#fff;border-radius:0 0 26px 26px;box-shadow:0 10px 28px rgba(20,55,90,.16)}
+.kicker{font-size:11px;font-weight:850;letter-spacing:1.5px;opacity:.72}.hero h1{font-size:31px;line-height:1.05;margin:7px 0 7px}.hero p{margin:0;font-size:15px;line-height:1.4;opacity:.9;max-width:560px}
+.wrap{max-width:620px;margin:0 auto;padding:16px 16px calc(42px + env(safe-area-inset-bottom))}.card{background:#fff;border-radius:22px;padding:20px;box-shadow:0 8px 30px rgba(25,52,82,.08)}
+.step{font-size:12px;font-weight:900;letter-spacing:.9px;color:#2a6b9e;margin-bottom:7px}.title{font-size:22px;font-weight:800;margin:0 0 5px}.sub{font-size:14px;color:var(--muted);line-height:1.4;margin-bottom:19px}
+label{display:block;font-size:13px;font-weight:800;margin:14px 0 7px}input{width:100%;border:1px solid var(--line);border-radius:13px;padding:14px 13px;font-size:16px;background:#fff;color:var(--ink);outline:none}input:focus{border-color:#4b90c6;box-shadow:0 0 0 3px rgba(55,127,182,.13)}
+.passwordWrap{position:relative}.passwordWrap input{padding-right:70px}.show{position:absolute;right:9px;top:8px;border:0;background:#edf4fb;color:#215f8f;border-radius:9px;padding:7px 9px;font-weight:800;font-size:12px}
+.check{display:flex;gap:10px;align-items:flex-start;margin:18px 0 16px;font-size:13px;line-height:1.4;color:#475569}.check input{width:18px;height:18px;margin:1px 0 0;flex:0 0 auto}
+.note{background:#fff8df;border:1px solid #ecdca4;border-radius:14px;padding:12px 13px;font-size:13px;line-height:1.4;color:#735b18;margin-bottom:15px}.note strong{display:block;margin-bottom:3px}
+button.primary{width:100%;border:0;border-radius:14px;padding:15px 16px;background:linear-gradient(135deg,#15395f,#2c78b4);color:#fff;font-size:16px;font-weight:850;box-shadow:0 8px 18px rgba(35,103,156,.22)}button.primary:disabled{opacity:.45;box-shadow:none}
+.result{display:none;margin-top:16px;border-radius:14px;padding:13px 14px;background:#ecf9f2;border:1px solid #b9e4cb;color:#155d3b;font-size:14px;line-height:1.45}.result.showResult{display:block}.tiny{text-align:center;color:#8b97a8;font-size:11px;line-height:1.4;margin-top:15px}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="kicker">PARENT PILOT</div>
+  <h1>🎓 Build your school dashboard</h1>
+  <p>Connect one student and turn Focus + Canvas into one simple grades, assignments, and activity view.</p>
+</header>
+<main class="wrap">
+  <section class="card">
+    <div class="step">STEP 1 OF 1</div>
+    <h2 class="title">Student setup</h2>
+    <div class="sub">This is the signup-page pilot. Test the experience before we connect secure credential storage and automatic dashboard creation.</div>
+
+    <label for="email">Parent email</label>
+    <input id="email" type="email" autocomplete="email" placeholder="you@example.com">
+
+    <label for="student">Student first name</label>
+    <input id="student" type="text" autocomplete="off" placeholder="Jordan">
+
+    <label for="username">BCPS student username</label>
+    <input id="username" type="text" autocomplete="username" placeholder="Student username">
+
+    <label for="password">BCPS student password</label>
+    <div class="passwordWrap">
+      <input id="password" type="password" autocomplete="current-password" placeholder="Student password">
+      <button class="show" id="showPassword" type="button">SHOW</button>
+    </div>
+
+    <label class="check"><input id="consent" type="checkbox"><span>I am the parent/guardian or otherwise authorized to access this student's school account and authorize this dashboard to retrieve school information for me.</span></label>
+
+    <div class="note"><strong>🔒 Pilot safety</strong>For this first test, use fake/dummy username and password values. The page does not transmit or save anything yet. Real school credentials will only be enabled after the secure backend is connected.</div>
+
+    <button class="primary" id="submit" type="button" disabled>Test signup</button>
+    <div class="result" id="result"></div>
+    <div class="tiny">No credentials are stored in GitHub, this webpage, or your browser by this pilot.</div>
+  </section>
+</main>
+<script>
+const ids=['email','student','username','password'];
+const get=id=>document.getElementById(id);
+const submit=get('submit');
+function valid(){submit.disabled=!(ids.every(id=>get(id).value.trim())&&get('consent').checked)}
+ids.forEach(id=>get(id).addEventListener('input',valid));get('consent').addEventListener('change',valid);
+get('showPassword').addEventListener('click',()=>{const p=get('password');const showing=p.type==='text';p.type=showing?'password':'text';get('showPassword').textContent=showing?'SHOW':'HIDE'});
+submit.addEventListener('click',()=>{
+  const student=get('student').value.trim();
+  const result=get('result');
+  result.textContent=`✅ Signup-page test complete for ${student}. Nothing was transmitted or saved. The next step is connecting the secure backend so a real parent submission can automatically create their dashboard.`;
+  result.classList.add('showResult');
+  get('password').value='';valid();
+});
+</script>
+</body>
+</html>
