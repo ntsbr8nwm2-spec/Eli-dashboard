@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#163b65">
+<title>Student School Dashboard</title>
+<style>body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f4f7fb;color:#172033;display:grid;place-items:center;min-height:100vh}.loading{font-weight:700;color:#6f7d90}</style>
+</head>
+<body>
+<div class="loading">Loading school dashboard…</div>
+<script>
+(async()=>{
+  const root='https://ntsbr8nwm2-spec.github.io/Eli-dashboard/';
+  const raw='https://raw.githubusercontent.com/ntsbr8nwm2-spec/Eli-dashboard/main/';
+  const [template,profile]=await Promise.all([
+    fetch(root+'index.html?t='+Date.now(),{cache:'no-store'}).then(r=>r.text()),
+    fetch('./profile.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json())
+  ]);
+  const name=String(profile.displayName||'STUDENT').trim().toUpperCase();
+  let html=template
+    .replace('<title>Eli School Dashboard</title>',`<title>${name} School Dashboard</title>`)
+    .replace('<h1>🎓 ELI</h1>',`<h1>🎓 ${name}</h1>`)
+    .replace("const DATA_URL='https://raw.githubusercontent.com/ntsbr8nwm2-spec/Eli-dashboard/main/data.json';",`const DATA_URL='${raw}students/pilot/data.json';`);
+  document.open();
+  document.write(html);
+  document.close();
+})().catch(()=>{
+  document.body.innerHTML='<div class="loading">Dashboard setup is not complete yet.</div>';
+});
+</script>
+</body>
+</html>
