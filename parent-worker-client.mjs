@@ -8,6 +8,7 @@
 // Restored pilot run.
 // Safe failure-detail capture.
 // Grade stderr capture.
+// Onboarding trigger 2026-08-24 16:43 EDT.
 import fs from 'node:fs/promises';
 
 const SUPABASE_URL='https://vihtghmtnnozflnmecis.supabase.co';
