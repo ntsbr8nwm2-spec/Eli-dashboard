@@ -3,7 +3,7 @@ name: Unattended school monitor
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '0 12,17,21 * * *'
   push:
     paths:
       - 'school-monitor.mjs'
@@ -41,169 +41,7 @@ jobs:
         env:
           BCPS_USERNAME: ${{ secrets.BCPS_USERNAME }}
           BCPS_PASSWORD: ${{ secrets.BCPS_PASSWORD }}
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          path = Path('school-monitor.mjs')
-          text = path.read_text()
-
-          marker = 'async function scrapeGrades(page) {'
-          helper = r'''async function scrapeCurrentGrades(page) {
-            const schoolYear = currentSchoolYear();
-
-            let rows = [];
-
-            for (let attempt = 1; attempt <= 20; attempt++) {
-              rows = await page.evaluate(year => {
-                return [...document.querySelectorAll("tr")]
-                  .map(tr =>
-                    [...tr.querySelectorAll("th,td")].map(cell =>
-                      String(cell.innerText || "").trim()
-                    )
-                  )
-                  .filter(row => row.includes(year));
-              }, schoolYear).catch(() => []);
-
-              if (rows.length) break;
-              await sleep(500);
-            }
-
-            const gradePattern = /^(?:NG|[0-9]{1,3}%\s*[A-F][+-]?|[A-F][+-]?)$/i;
-            const courses = [];
-
-            for (const row of rows) {
-              const yi = row.indexOf(schoolYear);
-              if (yi === -1) continue;
-
-              const period = row[yi + 2] || "";
-              const courseId = row[yi + 4] || "";
-              const course = row[yi + 5] || "";
-              const teacher = row[yi + 6] || "";
-
-              if (!course) continue;
-
-              const gradeTokens = row
-                .slice(yi + 11)
-                .filter(value => gradePattern.test(String(value).trim()));
-
-              const latest = gradeTokens.length
-                ? gradeTokens[gradeTokens.length - 1]
-                : "NG";
-
-              courses.push({
-                key: courseId || `${period}-${course}`,
-                period,
-                course,
-                teacher,
-                latest,
-                gradeTokens
-              });
-            }
-
-            return { schoolYear, courses };
-          }
-
-          '''
-
-          if 'async function scrapeCurrentGrades(page)' not in text:
-            if marker not in text:
-              raise SystemExit('scrapeGrades marker not found')
-            text = text.replace(marker, helper + marker, 1)
-
-          old = '''  if (!success) {
-            throw new Error("Focus login could not be completed by the unattended runner.");
-          }
-
-          const current = await scrapeGrades(page);'''
-
-          new = '''  let current;
-
-          if (!success) {
-            log("Login detector did not confirm; probing the current Grades page without navigating away.");
-            current = await scrapeCurrentGrades(page);
-
-            if (!current.courses.length) {
-              log("Current page had no parsable courses; trying one deliberate Grades reload.");
-              await sleep(2500);
-              current = await scrapeGrades(page);
-            }
-
-            if (!current.courses.length) {
-              throw new Error("Focus login could not be completed by the unattended runner.");
-            }
-
-            log("Grades are readable; session is authenticated.");
-          } else {
-            current = await scrapeGrades(page);
-          }'''
-
-          if old in text:
-            text = text.replace(old, new, 1)
-          elif 'Login detector did not confirm; probing the Grades page directly.' in text:
-            old2 = '''  let current;
-
-          if (!success) {
-            log("Login detector did not confirm; probing the Grades page directly.");
-            current = await scrapeGrades(page);
-
-            if (!current.courses.length) {
-              throw new Error("Focus login could not be completed by the unattended runner.");
-            }
-
-            log("Grades are readable; session is authenticated.");
-          } else {
-            current = await scrapeGrades(page);
-          }'''
-            if old2 not in text:
-              raise SystemExit('Existing login probe block was not found exactly')
-            text = text.replace(old2, new, 1)
-          else:
-            raise SystemExit('Expected login guard/probe was not found in school-monitor.mjs')
-
-          debug_old = '''    const info = await focusPageInfo(page);
-            const payload = {
-              at: new Date().toISOString(),
-              error: String(error),
-              host: hostFromURL(page.url()),
-              title: await page.title().catch(() => ""),
-              state: {'''
-
-          debug_new = '''    const info = await focusPageInfo(page);
-            const schoolYear = currentSchoolYear();
-            const pageSignals = await page.evaluate(year => {
-              const text = document.body ? document.body.innerText : "";
-              const lower = String(text).toLowerCase();
-              const yearRows = [...document.querySelectorAll("tr")].filter(tr =>
-                String(tr.innerText || "").includes(year)
-              ).length;
-
-              return {
-                focusHost: String(location.hostname || "").includes("focusschoolsoftware.com"),
-                gradesURL: String(location.href || "").includes("StudentRCGrades.php"),
-                hasSchoolYearText: String(text).includes(year),
-                yearRowCount: yearRows,
-                totalTableRows: document.querySelectorAll("tr").length,
-                signInWithMicrosoft: lower.includes("sign in with microsoft"),
-                logOutText: text.includes("Log Out")
-              };
-            }, schoolYear).catch(() => ({}));
-
-            const payload = {
-              at: new Date().toISOString(),
-              error: String(error),
-              host: hostFromURL(page.url()),
-              title: await page.title().catch(() => ""),
-              pageSignals,
-              state: {'''
-
-          if debug_old in text:
-            text = text.replace(debug_old, debug_new, 1)
-
-          path.write_text(text)
-          PY
-
-          node school-monitor.mjs
+        run: node school-monitor.mjs
 
       - name: Commit dashboard or safe diagnostics
         if: always()
@@ -211,16 +49,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add -A -- data.json
-
-          if [ -e auth-debug.json ] || git ls-files --error-unmatch auth-debug.json >/dev/null 2>&1; then
-            git add -A -- auth-debug.json
-          fi
+          git add -A -- data.json auth-debug.json 2>/dev/null || true
 
           if git diff --cached --quiet; then
             echo "No dashboard or diagnostic changes to commit"
           else
             git commit -m "Update unattended school monitor result"
+            git pull --rebase origin main
             git push
           fi
 
