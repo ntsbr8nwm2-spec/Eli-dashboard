@@ -4,72 +4,178 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#173b63">
-<title>School Dashboard Setup</title>
+<title>Broward Parent Dashboard</title>
 <style>
-:root{--navy:#173b63;--blue:#2b72aa;--ink:#182237;--muted:#6f7d90;--line:#e2e8f0;--bg:#f3f7fb;--card:#fff;--good:#16794c}
+:root{--navy:#173b63;--blue:#2b72aa;--ink:#182237;--muted:#6f7d90;--line:#e2e8f0;--bg:#f3f7fb;--card:#fff;--good:#16794c;--bad:#b42318}
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#edf4fb,#f7f9fc 420px);color:var(--ink)}
-.hero{padding:calc(20px + env(safe-area-inset-top)) 20px 22px;background:linear-gradient(135deg,#112f50,#286ca5);color:#fff;border-radius:0 0 26px 26px;box-shadow:0 10px 28px rgba(20,55,90,.16)}
-.kicker{font-size:11px;font-weight:850;letter-spacing:1.5px;opacity:.72}.hero h1{font-size:31px;line-height:1.05;margin:7px 0 7px}.hero p{margin:0;font-size:15px;line-height:1.4;opacity:.9;max-width:560px}
+.hero{padding:calc(18px + env(safe-area-inset-top)) 20px 20px;background:linear-gradient(135deg,#112f50,#286ca5);color:#fff;border-radius:0 0 26px 26px;box-shadow:0 10px 28px rgba(20,55,90,.16)}
+.kicker{font-size:11px;font-weight:850;letter-spacing:1.5px;opacity:.72}.hero h1{font-size:30px;line-height:1.05;margin:7px 0 7px}.hero p{margin:0;font-size:15px;line-height:1.4;opacity:.9;max-width:560px}
 .wrap{max-width:620px;margin:0 auto;padding:16px 16px calc(42px + env(safe-area-inset-bottom))}.card{background:#fff;border-radius:22px;padding:20px;box-shadow:0 8px 30px rgba(25,52,82,.08)}
-.step{font-size:12px;font-weight:900;letter-spacing:.9px;color:#2a6b9e;margin-bottom:7px}.title{font-size:22px;font-weight:800;margin:0 0 5px}.sub{font-size:14px;color:var(--muted);line-height:1.4;margin-bottom:19px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:#edf3f8;border-radius:13px;padding:4px;margin-bottom:20px}.tab{border:0;background:transparent;border-radius:10px;padding:10px 8px;font-size:14px;font-weight:800;color:#64748b}.tab.active{background:#fff;color:#173b63;box-shadow:0 2px 7px rgba(20,55,90,.09)}
+.step{font-size:12px;font-weight:900;letter-spacing:.9px;color:#2a6b9e;margin-bottom:7px}.title{font-size:22px;font-weight:800;margin:0 0 5px}.sub{font-size:14px;color:var(--muted);line-height:1.4;margin-bottom:18px}
 label{display:block;font-size:13px;font-weight:800;margin:14px 0 7px}input{width:100%;border:1px solid var(--line);border-radius:13px;padding:14px 13px;font-size:16px;background:#fff;color:var(--ink);outline:none}input:focus{border-color:#4b90c6;box-shadow:0 0 0 3px rgba(55,127,182,.13)}
 .passwordWrap{position:relative}.passwordWrap input{padding-right:70px}.show{position:absolute;right:9px;top:8px;border:0;background:#edf4fb;color:#215f8f;border-radius:9px;padding:7px 9px;font-weight:800;font-size:12px}
-.check{display:flex;gap:10px;align-items:flex-start;margin:18px 0 16px;font-size:13px;line-height:1.4;color:#475569}.check input{width:18px;height:18px;margin:1px 0 0;flex:0 0 auto}
-.note{background:#fff8df;border:1px solid #ecdca4;border-radius:14px;padding:12px 13px;font-size:13px;line-height:1.4;color:#735b18;margin-bottom:15px}.note strong{display:block;margin-bottom:3px}
-button.primary{width:100%;border:0;border-radius:14px;padding:15px 16px;background:linear-gradient(135deg,#15395f,#2c78b4);color:#fff;font-size:16px;font-weight:850;box-shadow:0 8px 18px rgba(35,103,156,.22)}button.primary:disabled{opacity:.45;box-shadow:none}
-.result{display:none;margin-top:16px;border-radius:14px;padding:13px 14px;background:#ecf9f2;border:1px solid #b9e4cb;color:#155d3b;font-size:14px;line-height:1.45}.result.showResult{display:block}.tiny{text-align:center;color:#8b97a8;font-size:11px;line-height:1.4;margin-top:15px}
+.check{display:flex;gap:10px;align-items:flex-start;margin:17px 0 16px;font-size:13px;line-height:1.4;color:#475569}.check input{width:18px;height:18px;margin:1px 0 0;flex:0 0 auto}
+.note{background:#eef7ff;border:1px solid #c9e1f5;border-radius:14px;padding:12px 13px;font-size:13px;line-height:1.4;color:#315b78;margin-bottom:15px}.note strong{display:block;margin-bottom:3px;color:#194d73}
+button.primary{width:100%;border:0;border-radius:14px;padding:15px 16px;background:linear-gradient(135deg,#15395f,#2c78b4);color:#fff;font-size:16px;font-weight:850;box-shadow:0 8px 18px rgba(35,103,156,.22)}button.primary:disabled{opacity:.45;box-shadow:none}.secondary{width:100%;border:1px solid #d9e2eb;border-radius:13px;padding:13px 15px;background:#fff;color:#31546f;font-size:14px;font-weight:800;margin-top:10px}
+.result{display:none;margin-top:16px;border-radius:14px;padding:13px 14px;font-size:14px;line-height:1.45}.result.showResult{display:block}.result.good{background:#ecf9f2;border:1px solid #b9e4cb;color:#155d3b}.result.bad{background:#fff0ef;border:1px solid #f2c8c5;color:var(--bad)}
+.account{display:none}.account.showAccount{display:block}.authform.hidden{display:none}.accountBox{background:#f7fafc;border:1px solid #e2e8f0;border-radius:16px;padding:15px;margin-top:14px}.accountName{font-size:18px;font-weight:850}.accountEmail{font-size:13px;color:var(--muted);margin-top:3px}.next{margin-top:14px;padding:13px;border-radius:14px;background:#fff8df;border:1px solid #ecdca4;color:#735b18;font-size:13px;line-height:1.45}
+.tiny{text-align:center;color:#8b97a8;font-size:11px;line-height:1.4;margin-top:15px}
+[hidden]{display:none!important}
 </style>
 </head>
 <body>
 <header class="hero">
-  <div class="kicker">PARENT PILOT</div>
-  <h1>🎓 Build your school dashboard</h1>
-  <p>Connect one student and turn Focus + Canvas into one simple grades, assignments, and activity view.</p>
+  <div class="kicker">BROWARD PARENT</div>
+  <h1>🎓 Your school dashboard</h1>
+  <p>Create your parent account first. Then we’ll connect your student’s Focus + Canvas account to the simple dashboard.</p>
 </header>
 <main class="wrap">
   <section class="card">
-    <div class="step">STEP 1 OF 1</div>
-    <h2 class="title">Student setup</h2>
-    <div class="sub">This is the signup-page pilot. Test the experience before we connect secure credential storage and automatic dashboard creation.</div>
+    <div id="authform" class="authform">
+      <div class="tabs">
+        <button id="createTab" class="tab active" type="button">Create account</button>
+        <button id="loginTab" class="tab" type="button">Sign in</button>
+      </div>
 
-    <label for="email">Parent email</label>
-    <input id="email" type="email" autocomplete="email" placeholder="you@example.com">
+      <div class="step" id="stepLabel">STEP 1</div>
+      <h2 class="title" id="formTitle">Create parent account</h2>
+      <div class="sub" id="formSub">Use your own email and create a password for this dashboard. This is separate from the student’s BCPS password.</div>
 
-    <label for="student">Student first name</label>
-    <input id="student" type="text" autocomplete="off" placeholder="Jordan">
+      <div id="studentField">
+        <label for="student">Student first name</label>
+        <input id="student" type="text" autocomplete="off" placeholder="Jordan" maxlength="40">
+      </div>
 
-    <label for="username">BCPS student username</label>
-    <input id="username" type="text" autocomplete="username" placeholder="Student username">
+      <label for="email">Parent email</label>
+      <input id="email" type="email" autocomplete="email" placeholder="you@example.com">
 
-    <label for="password">BCPS student password</label>
-    <div class="passwordWrap">
-      <input id="password" type="password" autocomplete="current-password" placeholder="Student password">
-      <button class="show" id="showPassword" type="button">SHOW</button>
+      <label for="parentPassword">Create dashboard password</label>
+      <div class="passwordWrap">
+        <input id="parentPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" minlength="8">
+        <button class="show" id="showPassword" type="button">SHOW</button>
+      </div>
+
+      <label id="consentWrap" class="check"><input id="consent" type="checkbox"><span>I am the parent/guardian or otherwise authorized to access this student's school information.</span></label>
+
+      <div class="note"><strong>🔒 School credentials are NOT requested yet</strong>This page now creates a real parent account through Supabase. We will add the student BCPS username/password only after the encrypted school-credential backend is ready.</div>
+
+      <button class="primary" id="submit" type="button">Create my account</button>
+      <div class="result" id="result"></div>
     </div>
 
-    <label class="check"><input id="consent" type="checkbox"><span>I am the parent/guardian or otherwise authorized to access this student's school account and authorize this dashboard to retrieve school information for me.</span></label>
+    <div id="account" class="account">
+      <div class="step">ACCOUNT CONNECTED</div>
+      <h2 class="title">Welcome 👋</h2>
+      <div class="sub">Your parent account is connected to the secure backend.</div>
+      <div class="accountBox">
+        <div class="accountName" id="accountStudent">Student dashboard</div>
+        <div class="accountEmail" id="accountEmail"></div>
+      </div>
+      <div class="next"><strong>Next:</strong> connect the student’s BCPS account. That screen will not be enabled until the encrypted credential storage is finished, so your school password never goes into GitHub or a public webpage.</div>
+      <button class="secondary" id="signOut" type="button">Sign out</button>
+    </div>
 
-    <div class="note"><strong>🔒 Pilot safety</strong>For this first test, use fake/dummy username and password values. The page does not transmit or save anything yet. Real school credentials will only be enabled after the secure backend is connected.</div>
-
-    <button class="primary" id="submit" type="button" disabled>Test signup</button>
-    <div class="result" id="result"></div>
-    <div class="tiny">No credentials are stored in GitHub, this webpage, or your browser by this pilot.</div>
+    <div class="tiny">Parent login is handled by Supabase Auth. Your school username/password are not collected on this page.</div>
   </section>
 </main>
-<script>
-const ids=['email','student','username','password'];
-const get=id=>document.getElementById(id);
-const submit=get('submit');
-function valid(){submit.disabled=!(ids.every(id=>get(id).value.trim())&&get('consent').checked)}
-ids.forEach(id=>get(id).addEventListener('input',valid));get('consent').addEventListener('change',valid);
-get('showPassword').addEventListener('click',()=>{const p=get('password');const showing=p.type==='text';p.type=showing?'password':'text';get('showPassword').textContent=showing?'SHOW':'HIDE'});
-submit.addEventListener('click',()=>{
-  const student=get('student').value.trim();
-  const result=get('result');
-  result.textContent=`✅ Signup-page test complete for ${student}. Nothing was transmitted or saved. The next step is connecting the secure backend so a real parent submission can automatically create their dashboard.`;
-  result.classList.add('showResult');
-  get('password').value='';valid();
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL='https://vihtghmtnnozflnmecis.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_ApNLrNRP70DP-xD0evgTJg_a-jj8mPp';
+const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+
+const $=id=>document.getElementById(id);
+let mode='create';
+
+function message(text,type='good'){
+  const box=$('result');
+  box.textContent=text;
+  box.className=`result showResult ${type}`;
+}
+function clearMessage(){ $('result').className='result'; $('result').textContent=''; }
+function setBusy(busy){ $('submit').disabled=busy; $('submit').textContent=busy?'Working…':(mode==='create'?'Create my account':'Sign in'); }
+function setMode(next){
+  mode=next; clearMessage();
+  const creating=mode==='create';
+  $('createTab').classList.toggle('active',creating);
+  $('loginTab').classList.toggle('active',!creating);
+  $('studentField').hidden=!creating;
+  $('consentWrap').hidden=!creating;
+  $('formTitle').textContent=creating?'Create parent account':'Sign in';
+  $('formSub').textContent=creating?'Use your own email and create a password for this dashboard. This is separate from the student’s BCPS password.':'Sign in with the parent account you already created.';
+  $('stepLabel').textContent=creating?'STEP 1':'WELCOME BACK';
+  $('parentPassword').autocomplete=creating?'new-password':'current-password';
+  $('submit').textContent=creating?'Create my account':'Sign in';
+}
+function showAccount(user){
+  $('authform').classList.add('hidden');
+  $('account').classList.add('showAccount');
+  const student=user?.user_metadata?.student_first_name?.trim();
+  $('accountStudent').textContent=student?`${student}'s dashboard`:'Student dashboard';
+  $('accountEmail').textContent=user?.email||'';
+}
+function showAuth(){
+  $('authform').classList.remove('hidden');
+  $('account').classList.remove('showAccount');
+}
+
+$('createTab').addEventListener('click',()=>setMode('create'));
+$('loginTab').addEventListener('click',()=>setMode('login'));
+$('showPassword').addEventListener('click',()=>{
+  const p=$('parentPassword'); const showing=p.type==='text';
+  p.type=showing?'password':'text'; $('showPassword').textContent=showing?'SHOW':'HIDE';
+});
+
+$('submit').addEventListener('click',async()=>{
+  clearMessage();
+  const email=$('email').value.trim();
+  const password=$('parentPassword').value;
+  const student=$('student').value.trim();
+
+  if(!email || !password){ message('Enter your email and dashboard password.','bad'); return; }
+  if(password.length<8){ message('Use at least 8 characters for your dashboard password.','bad'); return; }
+  if(mode==='create' && (!student || !$('consent').checked)){ message('Add the student first name and confirm authorization.','bad'); return; }
+
+  setBusy(true);
+  try{
+    if(mode==='create'){
+      const {data,error}=await supabase.auth.signUp({
+        email,
+        password,
+        options:{
+          data:{student_first_name:student},
+          emailRedirectTo:window.location.href.split('#')[0].split('?')[0]
+        }
+      });
+      if(error) throw error;
+      if(data.session){
+        showAccount(data.user);
+      }else{
+        message('✅ Parent account created. Check your email for the confirmation link, then come back here and sign in.','good');
+        setMode('login');
+        $('email').value=email;
+      }
+    }else{
+      const {data,error}=await supabase.auth.signInWithPassword({email,password});
+      if(error) throw error;
+      showAccount(data.user);
+    }
+  }catch(error){
+    message(error?.message||'Could not connect the account.','bad');
+  }finally{ setBusy(false); }
+});
+
+$('signOut').addEventListener('click',async()=>{ await supabase.auth.signOut(); showAuth(); setMode('login'); });
+
+const {data:{session}}=await supabase.auth.getSession();
+if(session?.user) showAccount(session.user);
+
+supabase.auth.onAuthStateChange((_event,session)=>{
+  if(session?.user) showAccount(session.user);
 });
 </script>
 </body>
