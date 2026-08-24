@@ -1,7 +1,7 @@
 {
-  "dateLabel": "Sun Aug 23",
-  "updatedAt": "2026-08-23T21:11:41.699Z",
-  "gradeStatus": "🚨 1 change",
+  "dateLabel": "Sun, Aug 23",
+  "updatedAt": "2026-08-24T02:11:39.600Z",
+  "gradeStatus": "Current grades",
   "grades": [
     {
       "course": "Anatomy",
@@ -26,10 +26,10 @@
     },
     {
       "course": "Geometry",
-      "display": "0% F→50% F",
+      "display": "50% F",
       "percent": 50,
       "letter": "F",
-      "change": "CHANGED"
+      "change": ""
     },
     {
       "course": "Digital Bus",
