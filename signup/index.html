@@ -18,10 +18,9 @@ label{display:block;font-size:13px;font-weight:800;margin:14px 0 7px}input{width
 .passwordWrap{position:relative}.passwordWrap input{padding-right:70px}.show{position:absolute;right:9px;top:8px;border:0;background:#edf4fb;color:#215f8f;border-radius:9px;padding:7px 9px;font-weight:800;font-size:12px}
 .check{display:flex;gap:10px;align-items:flex-start;margin:17px 0 16px;font-size:13px;line-height:1.4;color:#475569}.check input{width:18px;height:18px;margin:1px 0 0;flex:0 0 auto}
 .note{background:#eef7ff;border:1px solid #c9e1f5;border-radius:14px;padding:12px 13px;font-size:13px;line-height:1.4;color:#315b78;margin-bottom:15px}.note strong{display:block;margin-bottom:3px;color:#194d73}
-button.primary{width:100%;border:0;border-radius:14px;padding:15px 16px;background:linear-gradient(135deg,#15395f,#2c78b4);color:#fff;font-size:16px;font-weight:850;box-shadow:0 8px 18px rgba(35,103,156,.22)}button.primary:disabled{opacity:.45;box-shadow:none}.secondary{width:100%;border:1px solid #d9e2eb;border-radius:13px;padding:13px 15px;background:#fff;color:#31546f;font-size:14px;font-weight:800;margin-top:10px}
+button.primary{width:100%;border:0;border-radius:14px;padding:15px 16px;background:linear-gradient(135deg,#15395f,#2c78b4);color:#fff;font-size:16px;font-weight:850;box-shadow:0 8px 18px rgba(35,103,156,.22)}button.primary:disabled{opacity:.45;box-shadow:none}.secondary{width:100%;border:1px solid #d9e2eb;border-radius:13px;padding:13px 15px;background:#fff;color:#31546f;font-size:14px;font-weight:800;margin-top:10px}.danger{color:#9f2d25}
 .result{display:none;margin-top:16px;border-radius:14px;padding:13px 14px;font-size:14px;line-height:1.45}.result.showResult{display:block}.result.good{background:#ecf9f2;border:1px solid #b9e4cb;color:#155d3b}.result.bad{background:#fff0ef;border:1px solid #f2c8c5;color:var(--bad)}
-.account{display:none}.account.showAccount{display:block}.authform.hidden{display:none}.accountBox{background:#f7fafc;border:1px solid #e2e8f0;border-radius:16px;padding:15px;margin-top:14px}.accountName{font-size:18px;font-weight:850}.accountEmail{font-size:13px;color:var(--muted);margin-top:3px}.next{margin-top:14px;padding:13px;border-radius:14px;background:#fff8df;border:1px solid #ecdca4;color:#735b18;font-size:13px;line-height:1.45}
-.tiny{text-align:center;color:#8b97a8;font-size:11px;line-height:1.4;margin-top:15px}
+.account{display:none}.account.showAccount{display:block}.authform.hidden{display:none}.accountBox{background:#f7fafc;border:1px solid #e2e8f0;border-radius:16px;padding:15px;margin-top:14px}.accountName{font-size:18px;font-weight:850}.accountEmail{font-size:13px;color:var(--muted);margin-top:3px}.connectBox{margin-top:15px;border:1px solid #dbe5ee;border-radius:17px;padding:15px}.connectHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:3px}.connectTitle{font-size:18px;font-weight:850}.badge{font-size:11px;font-weight:900;border-radius:999px;padding:6px 9px;background:#edf3f8;color:#5b6f83}.badge.connected{background:#e8f7ee;color:#16643e}.secure{font-size:12px;color:#64748b;line-height:1.4;margin:12px 0}.tiny{text-align:center;color:#8b97a8;font-size:11px;line-height:1.4;margin-top:15px}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -29,7 +28,7 @@ button.primary{width:100%;border:0;border-radius:14px;padding:15px 16px;backgrou
 <header class="hero">
   <div class="kicker">BROWARD PARENT</div>
   <h1>🎓 Your school dashboard</h1>
-  <p>Create your parent account first. Then we’ll connect your student’s Focus + Canvas account to the simple dashboard.</p>
+  <p>Create your parent account, connect your student’s Focus + Canvas login, and we’ll build the simple school view.</p>
 </header>
 <main class="wrap">
   <section class="card">
@@ -51,7 +50,7 @@ button.primary{width:100%;border:0;border-radius:14px;padding:15px 16px;backgrou
       <label for="email">Parent email</label>
       <input id="email" type="email" autocomplete="email" placeholder="you@example.com">
 
-      <label for="parentPassword">Create dashboard password</label>
+      <label for="parentPassword" id="parentPasswordLabel">Create dashboard password</label>
       <div class="passwordWrap">
         <input id="parentPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" minlength="8">
         <button class="show" id="showPassword" type="button">SHOW</button>
@@ -59,7 +58,7 @@ button.primary{width:100%;border:0;border-radius:14px;padding:15px 16px;backgrou
 
       <label id="consentWrap" class="check"><input id="consent" type="checkbox"><span>I am the parent/guardian or otherwise authorized to access this student's school information.</span></label>
 
-      <div class="note"><strong>🔒 School credentials are NOT requested yet</strong>This page now creates a real parent account through Supabase. We will add the student BCPS username/password only after the encrypted school-credential backend is ready.</div>
+      <div class="note"><strong>🔒 Parent account</strong>Your dashboard login is handled by Supabase Auth. Your BCPS login is entered only after you are signed in.</div>
 
       <button class="primary" id="submit" type="button">Create my account</button>
       <div class="result" id="result"></div>
@@ -73,11 +72,32 @@ button.primary{width:100%;border:0;border-radius:14px;padding:15px 16px;backgrou
         <div class="accountName" id="accountStudent">Student dashboard</div>
         <div class="accountEmail" id="accountEmail"></div>
       </div>
-      <div class="next"><strong>Next:</strong> connect the student’s BCPS account. That screen will not be enabled until the encrypted credential storage is finished, so your school password never goes into GitHub or a public webpage.</div>
+
+      <div class="connectBox">
+        <div class="connectHead">
+          <div class="connectTitle">Connect BCPS</div>
+          <div class="badge" id="connectionBadge">Not connected</div>
+        </div>
+        <div class="secure">🔐 The school username and password are sent over HTTPS to Supabase and encrypted before storage. They are not written to GitHub or your public dashboard.</div>
+
+        <label for="bcpsUsername">Student BCPS username</label>
+        <input id="bcpsUsername" type="text" autocomplete="username" placeholder="Student username" autocapitalize="none" spellcheck="false">
+
+        <label for="bcpsPassword">Student BCPS password</label>
+        <div class="passwordWrap">
+          <input id="bcpsPassword" type="password" autocomplete="current-password" placeholder="Student password">
+          <button class="show" id="showBcpsPassword" type="button">SHOW</button>
+        </div>
+
+        <button class="primary" id="connectBcps" type="button" style="margin-top:16px">Connect school account</button>
+        <div class="result" id="connectResult"></div>
+        <button class="secondary danger" id="disconnectBcps" type="button" hidden>Disconnect saved school login</button>
+      </div>
+
       <button class="secondary" id="signOut" type="button">Sign out</button>
     </div>
 
-    <div class="tiny">Parent login is handled by Supabase Auth. Your school username/password are not collected on this page.</div>
+    <div class="tiny">Parent access is protected by Supabase Auth. Saved school credentials are encrypted in the private backend.</div>
   </section>
 </main>
 
@@ -90,13 +110,14 @@ const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 
 const $=id=>document.getElementById(id);
 let mode='create';
+let currentStudent=null;
 
-function message(text,type='good'){
-  const box=$('result');
+function message(text,type='good',target='result'){
+  const box=$(target);
   box.textContent=text;
   box.className=`result showResult ${type}`;
 }
-function clearMessage(){ $('result').className='result'; $('result').textContent=''; }
+function clearMessage(target='result'){ $(target).className='result'; $(target).textContent=''; }
 function setBusy(busy){ $('submit').disabled=busy; $('submit').textContent=busy?'Working…':(mode==='create'?'Create my account':'Sign in'); }
 function setMode(next){
   mode=next; clearMessage();
@@ -108,19 +129,41 @@ function setMode(next){
   $('formTitle').textContent=creating?'Create parent account':'Sign in';
   $('formSub').textContent=creating?'Use your own email and create a password for this dashboard. This is separate from the student’s BCPS password.':'Sign in with the parent account you already created.';
   $('stepLabel').textContent=creating?'STEP 1':'WELCOME BACK';
+  $('parentPasswordLabel').textContent=creating?'Create dashboard password':'Dashboard password';
   $('parentPassword').autocomplete=creating?'new-password':'current-password';
   $('submit').textContent=creating?'Create my account':'Sign in';
 }
-function showAccount(user){
+function connectionUI(status){
+  const connected=status==='connected';
+  $('connectionBadge').textContent=connected?'Connected ✓':'Not connected';
+  $('connectionBadge').classList.toggle('connected',connected);
+  $('connectBcps').textContent=connected?'Update school login':'Connect school account';
+  $('disconnectBcps').hidden=!connected;
+}
+async function ensureStudent(user){
+  const firstName=String(user?.user_metadata?.student_first_name||'Student').trim()||'Student';
+  const {data,error}=await supabase.rpc('get_or_create_student',{p_first_name:firstName});
+  if(error) throw error;
+  currentStudent=data;
+  return data;
+}
+async function showAccount(user){
   $('authform').classList.add('hidden');
   $('account').classList.add('showAccount');
-  const student=user?.user_metadata?.student_first_name?.trim();
-  $('accountStudent').textContent=student?`${student}'s dashboard`:'Student dashboard';
   $('accountEmail').textContent=user?.email||'';
+  try{
+    const student=await ensureStudent(user);
+    $('accountStudent').textContent=`${student.first_name}'s dashboard`;
+    connectionUI(student.connection_status);
+  }catch(error){
+    $('accountStudent').textContent='Student dashboard';
+    message(error?.message||'Could not load the student profile.','bad','connectResult');
+  }
 }
 function showAuth(){
   $('authform').classList.remove('hidden');
   $('account').classList.remove('showAccount');
+  currentStudent=null;
 }
 
 $('createTab').addEventListener('click',()=>setMode('create'));
@@ -128,6 +171,10 @@ $('loginTab').addEventListener('click',()=>setMode('login'));
 $('showPassword').addEventListener('click',()=>{
   const p=$('parentPassword'); const showing=p.type==='text';
   p.type=showing?'password':'text'; $('showPassword').textContent=showing?'SHOW':'HIDE';
+});
+$('showBcpsPassword').addEventListener('click',()=>{
+  const p=$('bcpsPassword'); const showing=p.type==='text';
+  p.type=showing?'password':'text'; $('showBcpsPassword').textContent=showing?'SHOW':'HIDE';
 });
 
 $('submit').addEventListener('click',async()=>{
@@ -146,14 +193,11 @@ $('submit').addEventListener('click',async()=>{
       const {data,error}=await supabase.auth.signUp({
         email,
         password,
-        options:{
-          data:{student_first_name:student},
-          emailRedirectTo:window.location.href.split('#')[0].split('?')[0]
-        }
+        options:{data:{student_first_name:student},emailRedirectTo:window.location.href.split('#')[0].split('?')[0]}
       });
       if(error) throw error;
       if(data.session){
-        showAccount(data.user);
+        await showAccount(data.user);
       }else{
         message('✅ Parent account created. Check your email for the confirmation link, then come back here and sign in.','good');
         setMode('login');
@@ -162,20 +206,53 @@ $('submit').addEventListener('click',async()=>{
     }else{
       const {data,error}=await supabase.auth.signInWithPassword({email,password});
       if(error) throw error;
-      showAccount(data.user);
+      await showAccount(data.user);
     }
   }catch(error){
     message(error?.message||'Could not connect the account.','bad');
   }finally{ setBusy(false); }
 });
 
+$('connectBcps').addEventListener('click',async()=>{
+  clearMessage('connectResult');
+  const username=$('bcpsUsername').value.trim();
+  const password=$('bcpsPassword').value;
+  if(!currentStudent){ message('Student profile is not ready yet. Refresh and try again.','bad','connectResult'); return; }
+  if(!username||!password){ message('Enter the student BCPS username and password.','bad','connectResult'); return; }
+  const btn=$('connectBcps'); btn.disabled=true; const old=btn.textContent; btn.textContent='Encrypting…';
+  try{
+    const {error}=await supabase.rpc('save_school_credentials',{p_student_id:currentStudent.id,p_username:username,p_password:password});
+    if(error) throw error;
+    currentStudent.connection_status='connected';
+    connectionUI('connected');
+    $('bcpsUsername').value=''; $('bcpsPassword').value='';
+    message('✅ School login securely saved. Next we’ll use it to build this student’s Focus + Canvas dashboard.','good','connectResult');
+  }catch(error){
+    message(error?.message||'Could not securely save the school login.','bad','connectResult');
+  }finally{ btn.disabled=false; if(currentStudent?.connection_status!=='connected')btn.textContent=old; }
+});
+
+$('disconnectBcps').addEventListener('click',async()=>{
+  if(!currentStudent) return;
+  const btn=$('disconnectBcps'); btn.disabled=true;
+  try{
+    const {error}=await supabase.rpc('disconnect_school_credentials',{p_student_id:currentStudent.id});
+    if(error) throw error;
+    currentStudent.connection_status='not_connected';
+    connectionUI('not_connected');
+    message('Saved school login removed.','good','connectResult');
+  }catch(error){ message(error?.message||'Could not disconnect the school login.','bad','connectResult'); }
+  finally{btn.disabled=false;}
+});
+
 $('signOut').addEventListener('click',async()=>{ await supabase.auth.signOut(); showAuth(); setMode('login'); });
 
 const {data:{session}}=await supabase.auth.getSession();
-if(session?.user) showAccount(session.user);
+if(session?.user) await showAccount(session.user);
 
 supabase.auth.onAuthStateChange((_event,session)=>{
-  if(session?.user) showAccount(session.user);
+  if(!session?.user) return;
+  setTimeout(()=>showAccount(session.user),0);
 });
 </script>
 </body>
