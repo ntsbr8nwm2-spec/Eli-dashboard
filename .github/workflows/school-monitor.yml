@@ -9,6 +9,7 @@ on:
       - 'school-monitor.mjs'
       - 'school-extras.mjs'
       - 'focus-news.mjs'
+      - 'focus-news-v2.mjs'
       - 'sanitize-dashboard.mjs'
       - '.github/workflows/school-monitor.yml'
 
@@ -65,11 +66,11 @@ jobs:
         run: |
           for attempt in 1 2 3; do
             echo "Focus News attempt $attempt"
-            if node focus-news.mjs; then
+            if node focus-news-v2.mjs; then
               exit 0
             fi
             if [ "$attempt" -lt 3 ]; then
-              echo "Focus redirected during login; retrying after 4 seconds"
+              echo "Focus News retrying after 4 seconds"
               sleep 4
             fi
           done
