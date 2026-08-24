@@ -62,7 +62,18 @@ jobs:
         env:
           BCPS_USERNAME: ${{ secrets.BCPS_USERNAME }}
           BCPS_PASSWORD: ${{ secrets.BCPS_PASSWORD }}
-        run: node focus-news.mjs
+        run: |
+          for attempt in 1 2 3; do
+            echo "Focus News attempt $attempt"
+            if node focus-news.mjs; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "Focus redirected during login; retrying after 4 seconds"
+              sleep 4
+            fi
+          done
+          exit 1
 
       - name: Sanitize Canvas dashboard output
         if: steps.monitor.outcome == 'success'
