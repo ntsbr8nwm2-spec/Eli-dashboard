@@ -8,6 +8,7 @@ on:
     paths:
       - 'school-monitor.mjs'
       - 'school-extras.mjs'
+      - 'sanitize-dashboard.mjs'
       - '.github/workflows/school-monitor.yml'
 
 permissions:
@@ -52,6 +53,10 @@ jobs:
           BCPS_USERNAME: ${{ secrets.BCPS_USERNAME }}
           BCPS_PASSWORD: ${{ secrets.BCPS_PASSWORD }}
         run: node school-extras.mjs
+
+      - name: Sanitize Canvas dashboard output
+        if: steps.monitor.outcome == 'success'
+        run: node sanitize-dashboard.mjs
 
       - name: Commit dashboard, state, or safe diagnostics
         if: always()
