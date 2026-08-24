@@ -8,6 +8,7 @@ on:
     paths:
       - 'school-monitor.mjs'
       - 'school-extras.mjs'
+      - 'focus-news.mjs'
       - 'sanitize-dashboard.mjs'
       - '.github/workflows/school-monitor.yml'
 
@@ -21,7 +22,7 @@ concurrency:
 jobs:
   monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
 
     steps:
       - name: Check out dashboard repository
@@ -54,6 +55,15 @@ jobs:
           BCPS_PASSWORD: ${{ secrets.BCPS_PASSWORD }}
         run: node school-extras.mjs
 
+      - name: Run robust Focus News collector
+        id: news
+        if: steps.monitor.outcome == 'success'
+        continue-on-error: true
+        env:
+          BCPS_USERNAME: ${{ secrets.BCPS_USERNAME }}
+          BCPS_PASSWORD: ${{ secrets.BCPS_PASSWORD }}
+        run: node focus-news.mjs
+
       - name: Sanitize Canvas dashboard output
         if: steps.monitor.outcome == 'success'
         run: node sanitize-dashboard.mjs
@@ -66,7 +76,7 @@ jobs:
 
           git add -A -- data.json
 
-          for file in school-state.json auth-debug.json extras-debug.json; do
+          for file in school-state.json news-state.json auth-debug.json extras-debug.json news-debug.json; do
             if [ -e "$file" ] || git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
               git add -A -- "$file"
             fi
@@ -98,10 +108,23 @@ jobs:
           if-no-files-found: ignore
           retention-days: 3
 
+      - name: Upload News diagnostics on failure
+        if: steps.news.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: focus-news-debug
+          path: news-debug.json
+          if-no-files-found: ignore
+          retention-days: 3
+
       - name: Mark Focus grade failure
         if: steps.monitor.outcome == 'failure'
         run: exit 1
 
       - name: Mark extras failure
         if: steps.extras.outcome == 'failure'
+        run: exit 1
+
+      - name: Mark News failure
+        if: steps.news.outcome == 'failure'
         run: exit 1
