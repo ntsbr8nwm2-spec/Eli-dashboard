@@ -39,7 +39,41 @@ jobs:
         env:
           BCPS_USERNAME: ${{ secrets.BCPS_USERNAME }}
           BCPS_PASSWORD: ${{ secrets.BCPS_PASSWORD }}
-        run: node school-monitor.mjs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('school-monitor.mjs')
+          text = path.read_text()
+
+          old = '''  if (!success) {
+            throw new Error("Focus login could not be completed by the unattended runner.");
+          }
+
+          const current = await scrapeGrades(page);'''
+
+          new = '''  let current;
+
+          if (!success) {
+            log("Login detector did not confirm; probing the Grades page directly.");
+            current = await scrapeGrades(page);
+
+            if (!current.courses.length) {
+              throw new Error("Focus login could not be completed by the unattended runner.");
+            }
+
+            log("Grades are readable; session is authenticated.");
+          } else {
+            current = await scrapeGrades(page);
+          }'''
+
+          if old not in text:
+            raise SystemExit('Expected login guard was not found in school-monitor.mjs')
+
+          path.write_text(text.replace(old, new, 1))
+          PY
+
+          node school-monitor.mjs
 
       - name: Commit dashboard update
         run: |
