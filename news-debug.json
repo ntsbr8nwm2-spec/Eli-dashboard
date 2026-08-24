@@ -1,9 +1,9 @@
 {
-  "at": "2026-08-24T15:36:11.690Z",
-  "reason": "Error: page.goto: Navigation to \"https://browardschools.focusschoolsoftware.com/focus/Modules.php?force_package=SIS&modname=Grades/StudentRCGrades.php&details=false\" is interrupted by another navigation to \"https://browardschools.focusschoolsoftware.com/focus/redirect.php?login=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3ODc1ODU3NjIsImV4cCI6MTc5MDE3Nzc2MiwiYXVkIjoiaHR0cHM6XC9cL2Jyb3dhcmRzY2hvb2xzLmZvY3Vzc2Nob29sc29mdHdhcmUuY29tXC9mb2N1cyIsImlzcyI6MSwic3ViIjoiOWIyYWVhOTg1NzY3MjYwNWNjYjkyM2FmMGYxNGUzMzUiLCJtIjowLCJrIjowLCJwIjowfQ.Gg8WZVzKbGKAymk1zzS8F3Cnnaj_8Eerm2AxjpLucF0\"\nCall log:\n  - navigating to \"https://browardschools.focusschoolsoftware.com/focus/Modules.php?force_package=SIS&modname=Grades/StudentRCGrades.php&details=false\", waiting until \"domcontentloaded\"\n",
+  "at": "2026-08-24T15:41:11.807Z",
+  "reason": "Error: Focus News opened but zero activity rows were parsed.",
   "page": {
     "host": "browardschools.focusschoolsoftware.com",
-    "path": "/focus/redirect.php"
+    "path": "/focus/Modules.php"
   },
   "diagnostics": [],
   "trace": []
