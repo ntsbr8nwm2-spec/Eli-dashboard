@@ -1,13 +1,13 @@
 {
   "dateLabel": "Mon, Aug 24",
-  "updatedAt": "2026-08-24T14:29:02.835Z",
+  "updatedAt": "2026-08-24T14:47:46.213Z",
   "gradeStatus": "🚨 1 change",
   "grades": [
     {
       "course": "Anatomy",
-      "display": "102% A",
-      "percent": 102,
-      "letter": "A",
+      "display": "70% C",
+      "percent": 70,
+      "letter": "C",
       "change": "CHANGED"
     },
     {
@@ -69,6 +69,12 @@
     },
     {
       "day": "TODAY",
+      "time": "8:00 AM",
+      "course": "Canvas",
+      "title": "Bell ringer: Name 3 of the 6 Key directional terms (ANAT..."
+    },
+    {
+      "day": "TODAY",
       "time": "9:00 AM",
       "course": "Canvas",
       "title": "What is Medical Terminology? : Video Quiz (ANAT PHYSIO..."
@@ -90,6 +96,18 @@
       "time": "9:10 AM",
       "course": "Canvas",
       "title": "Exit Ticket: What are directional terms used for? (ANAT..."
+    },
+    {
+      "day": "FRI AUG 28",
+      "time": "11:05 AM",
+      "course": "Biology",
+      "title": "Properties of Molecules Building Activity (BIOLOGY 1..."
+    },
+    {
+      "day": "FRI AUG 28",
+      "time": "11:05 AM",
+      "course": "Canvas",
+      "title": "Properties of Molecules Building Activity (BIOLOGY 1..."
     }
   ],
   "activityStatus": "Nothing new",
