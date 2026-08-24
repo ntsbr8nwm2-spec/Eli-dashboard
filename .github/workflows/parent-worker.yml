@@ -53,7 +53,7 @@ jobs:
         id: grades
         working-directory: /tmp/parent-school-run
         continue-on-error: true
-        run: node school-monitor.mjs
+        run: node school-monitor.mjs 2>grade-stderr.txt
 
       - name: Save previous Canvas assignments
         if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success'
