@@ -51,7 +51,14 @@ else{
   if(error){document.getElementById('main').innerHTML=`<div class="card empty">${esc(error.message)}</div>`;}
   else{
     const row=Array.isArray(data)?data[0]:data;
-    if(!row||!row.dashboard_data||!Object.keys(row.dashboard_data).length){document.getElementById('studentTitle').textContent=`🎓 ${String(row?.first_name||'Student').toUpperCase()}`;document.getElementById('updated').textContent='Dashboard is still being built.';document.getElementById('main').innerHTML='<div class="card loading">Your school login is connected. The first Focus + Canvas update is still processing.</div>';}else render(row.first_name,row.dashboard_data,row.dashboard_updated_at);
+    if(!row || row.connection_status!=='connected'){
+      location.replace('../signup/?manage=1');
+    }else if(!row.dashboard_data||!Object.keys(row.dashboard_data).length){
+      document.getElementById('studentTitle').textContent=`🎓 ${String(row.first_name||'Student').toUpperCase()}`;
+      document.getElementById('updated').textContent='Building your first dashboard…';
+      document.getElementById('main').innerHTML='<div class="card loading">Your school login is connected. We’re collecting Focus grades, Canvas work, and recent activity now.<br><br>This page will refresh automatically.</div>';
+      setTimeout(()=>location.reload(),15000);
+    }else render(row.first_name,row.dashboard_data,row.dashboard_updated_at);
   }
 }
 </script>
