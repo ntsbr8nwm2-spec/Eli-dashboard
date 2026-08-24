@@ -97,7 +97,7 @@ jobs:
       - name: Record failed private run
         if: always() && env.NO_PARENT_JOB != 'true' && (steps.grades.outcome == 'failure' || steps.canvas.outcome == 'failure' || steps.news.outcome == 'failure')
         env:
-          WORKER_ERROR: One or more school collectors failed. Review the GitHub Action diagnostics; credentials were not logged.
+          WORKER_ERROR: grades=${{ steps.grades.outcome }}; canvas=${{ steps.canvas.outcome }}; news=${{ steps.news.outcome }}
         run: node parent-worker-client.mjs fail
 
       - name: Mark collector failure
