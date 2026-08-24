@@ -4,6 +4,7 @@
 // Immutable subject retry.
 // Diagnostic retry.
 // Lease ambiguity fix retry.
+// One-time secure pilot restore support.
 import fs from 'node:fs/promises';
 
 const SUPABASE_URL='https://vihtghmtnnozflnmecis.supabase.co';
@@ -38,6 +39,16 @@ async function appendEnv(name,value){
   if(!p) return;
   const marker=`EOF_${Math.random().toString(36).slice(2)}`;
   await fs.appendFile(p,`${name}<<${marker}\n${String(value??'')}\n${marker}\n`);
+}
+
+async function seedPilot(){
+  const username=process.env.PILOT_BCPS_USERNAME||'';
+  const password=process.env.PILOT_BCPS_PASSWORD||'';
+  if(!username||!password) throw new Error('Pilot restore credentials are unavailable.');
+  console.log(`::add-mask::${username}`);
+  console.log(`::add-mask::${password}`);
+  await callWorker({action:'seed-pilot',username,password});
+  console.log('[PARENT] Pilot school login securely restored to Supabase.');
 }
 
 async function lease(){
@@ -84,7 +95,8 @@ async function fail(){
   console.log('[PARENT] Worker failure recorded without exposing school credentials.');
 }
 
-if(MODE==='lease') await lease();
+if(MODE==='seed-pilot') await seedPilot();
+else if(MODE==='lease') await lease();
 else if(MODE==='publish') await publish();
 else if(MODE==='fail') await fail();
-else throw new Error('Use lease, publish, or fail.');
+else throw new Error('Use seed-pilot, lease, publish, or fail.');
