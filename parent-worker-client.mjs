@@ -1,6 +1,7 @@
 // Secure client used by the GitHub-hosted parent dashboard worker.
 // Pilot OIDC retry.
 // Signature verification retry.
+// Immutable subject retry.
 import fs from 'node:fs/promises';
 
 const SUPABASE_URL='https://vihtghmtnnozflnmecis.supabase.co';
