@@ -49,7 +49,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add -A -- data.json auth-debug.json 2>/dev/null || true
+          git add -A -- data.json
+
+          if [ -e auth-debug.json ] || git ls-files --error-unmatch auth-debug.json >/dev/null 2>&1; then
+            git add -A -- auth-debug.json
+          fi
 
           if git diff --cached --quiet; then
             echo "No dashboard or diagnostic changes to commit"
