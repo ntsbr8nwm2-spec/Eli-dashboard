@@ -1,14 +1,14 @@
 {
   "dateLabel": "Tue, Aug 25",
-  "updatedAt": "2026-08-25T17:08:41.013Z",
-  "gradeStatus": "🚨 1 change",
+  "updatedAt": "2026-08-25T19:51:33.882Z",
+  "gradeStatus": "Current grades",
   "grades": [
     {
       "course": "Anatomy",
       "display": "72% C",
       "percent": 72,
       "letter": "C",
-      "change": "CHANGED"
+      "change": ""
     },
     {
       "course": "Biology",
@@ -98,7 +98,7 @@
       "title": "Review Questions for \"Tips for Shooting Better Video with..."
     }
   ],
-  "activityStatus": "1 new",
+  "activityStatus": "Up to date",
   "activity": [
     "Anatomy — Bell ringer: Name 3 of the 6 Key directional terms · 2.5/5 · 50% · F · 08/25 10:32 AM",
     "Chorus — Participation/Rehearsal Effort/Wks.1&2 · 100/100 · A · 08/25 8:32 AM",
