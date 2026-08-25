@@ -1,14 +1,14 @@
 {
   "dateLabel": "Tue, Aug 25",
-  "updatedAt": "2026-08-25T14:32:11.322Z",
+  "updatedAt": "2026-08-25T17:08:41.013Z",
   "gradeStatus": "🚨 1 change",
   "grades": [
     {
       "course": "Anatomy",
-      "display": "73% C",
-      "percent": 73,
+      "display": "72% C",
+      "percent": 72,
       "letter": "C",
-      "change": ""
+      "change": "CHANGED"
     },
     {
       "course": "Biology",
@@ -43,7 +43,7 @@
       "display": "100% A",
       "percent": 100,
       "letter": "A",
-      "change": "CHANGED"
+      "change": ""
     },
     {
       "course": "World Hist",
@@ -100,6 +100,7 @@
   ],
   "activityStatus": "1 new",
   "activity": [
+    "Anatomy — Bell ringer: Name 3 of the 6 Key directional terms · 2.5/5 · 50% · F · 08/25 10:32 AM",
     "Chorus — Participation/Rehearsal Effort/Wks.1&2 · 100/100 · A · 08/25 8:32 AM",
     "Anatomy — Bell ringer: Which systems work together for movement of the body? · 3.3/5 · 66% · D · 08/24 2:25 PM",
     "Anatomy — Exit ticket: What is the anatomical position · 5/5 · 100% · A · 08/24 2:24 PM",
@@ -113,8 +114,7 @@
     "English — Syllabus Scavenger Hunt · 50/50 · 100% · A · 08/19 3:17 PM",
     "World Hist — Heimler History- The World Before 1200 CE Video and ACE discussion · 15/15 · 100% · A · 08/19 2:36 PM",
     "Anatomy — Bell ringer: Name 3 body systems · 5/5 · 100% · A · 08/19 9:35 AM",
-    "Anatomy — Exit Ticket: What is the definition of Physiology? · 5/5 · 100% · A · 08/19 9:24 AM",
-    "Biology — 3. The Blind Men and the Elephant · 10/10 · A · 08/18 11:36 AM"
+    "Anatomy — Exit Ticket: What is the definition of Physiology? · 5/5 · 100% · A · 08/19 9:24 AM"
   ],
   "message": "Geometry waking up from a coma to a 50% is… progress, I guess. At least it’s not a flatline anymore. Keep climbing, because the rest of your grades are straight-up legendary and Geometry is the only one making you look mortal."
 }
