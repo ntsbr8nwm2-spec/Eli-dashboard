@@ -1,21 +1,21 @@
 {
-  "dateLabel": "Tue, Aug 25",
-  "updatedAt": "2026-08-26T03:40:01.629Z",
-  "gradeStatus": "Current grades",
+  "dateLabel": "Wed, Aug 26",
+  "updatedAt": "2026-08-26T14:32:00.458Z",
+  "gradeStatus": "🚨 2 changes",
   "grades": [
     {
       "course": "Anatomy",
-      "display": "72% C",
-      "percent": 72,
-      "letter": "C",
-      "change": ""
+      "display": "80% B",
+      "percent": 80,
+      "letter": "B",
+      "change": "CHANGED"
     },
     {
       "course": "Biology",
-      "display": "105% A",
-      "percent": 105,
+      "display": "101% A",
+      "percent": 101,
       "letter": "A",
-      "change": ""
+      "change": "CHANGED"
     },
     {
       "course": "English",
@@ -62,25 +62,31 @@
   ],
   "assignments": [
     {
-      "day": "TOMORROW",
-      "time": "8:00 AM",
-      "course": "Anatomy",
-      "title": "Bell Ringer: Proximal/Distal VS Superior/Inferior (ANAT..."
-    },
-    {
-      "day": "TOMORROW",
+      "day": "TODAY",
       "time": "8:00 AM",
       "course": "Canvas",
       "title": "Bell Ringer: Proximal/Distal VS Superior/Inferior (ANAT..."
     },
     {
-      "day": "TOMORROW",
-      "time": "9:10 AM",
-      "course": "Anatomy",
-      "title": "Exit Ticket: Body Planes (ANAT PHYSIO..."
+      "day": "TODAY",
+      "time": "8:25 AM",
+      "course": "Canvas",
+      "title": "Basic Anatomical Language: Video Quiz (ANAT PHYSIO..."
     },
     {
-      "day": "TOMORROW",
+      "day": "TODAY",
+      "time": "8:55 AM",
+      "course": "Canvas",
+      "title": "Check Your Understanding 1.1-2 Describing the Human Body..."
+    },
+    {
+      "day": "TODAY",
+      "time": "9:05 AM",
+      "course": "Canvas",
+      "title": "The Language of Anatomy and Physiology Image Labeling..."
+    },
+    {
+      "day": "TODAY",
       "time": "9:10 AM",
       "course": "Canvas",
       "title": "Exit Ticket: Body Planes (ANAT PHYSIO..."
@@ -90,6 +96,18 @@
       "time": "11:05 AM",
       "course": "Canvas",
       "title": "Properties of Molecules Building Activity (BIOLOGY 1..."
+    },
+    {
+      "day": "FRI AUG 28",
+      "time": "11:59 PM",
+      "course": "Biology",
+      "title": "Chemistry of the Properties of Water Video Part 1 Review..."
+    },
+    {
+      "day": "FRI AUG 28",
+      "time": "11:59 PM",
+      "course": "Canvas",
+      "title": "Chemistry of the Properties of Water Video Part 1 Review..."
     },
     {
       "day": "FRI AUG 28",
@@ -116,8 +134,11 @@
       "title": "Review Questions for \"Tips for Shooting Better Video with..."
     }
   ],
-  "activityStatus": "1 new",
+  "activityStatus": "3 new",
   "activity": [
+    "Anatomy — The Human Organ Systems · 22/24 · 92% · A · 08/26 8:32 AM",
+    "Anatomy — What is Medical Terminology? : Video Quiz · 29/31 · 94% · A · 08/26 8:32 AM",
+    "Biology — Properties of Molecules Building Activity · 7/10 · C · 08/26 5:18 AM",
     "Digital Bus — Camera Orientation and Practice · 20/20 · A · 08/25 7:59 PM",
     "Anatomy — Bell ringer: Name 3 of the 6 Key directional terms · 2.5/5 · 50% · F · 08/25 10:32 AM",
     "Chorus — Participation/Rehearsal Effort/Wks.1&2 · 100/100 · A · 08/25 8:32 AM",
@@ -129,10 +150,7 @@
     "Biology — Properties of Water Amoeba Sisters · 10/10 · A · 08/24 3:44 AM",
     "Geometry — SAVVAS:1-2 · 5/5 · 100% · A · 08/22 9:16 PM",
     "Biology — Water Properties Graphic Reading Article with Questions · EC · 08/21 12:26 PM",
-    "Digital Bus — Interviewing: In Class Exercise · 20/20 · A · 08/21 10:41 AM",
-    "English — Syllabus Scavenger Hunt · 50/50 · 100% · A · 08/19 3:17 PM",
-    "World Hist — Heimler History- The World Before 1200 CE Video and ACE discussion · 15/15 · 100% · A · 08/19 2:36 PM",
-    "Anatomy — Bell ringer: Name 3 body systems · 5/5 · 100% · A · 08/19 9:35 AM"
+    "Digital Bus — Interviewing: In Class Exercise · 20/20 · A · 08/21 10:41 AM"
   ],
   "message": "Geometry waking up from a coma to a 50% is… progress, I guess. At least it’s not a flatline anymore. Keep climbing, because the rest of your grades are straight-up legendary and Geometry is the only one making you look mortal."
 }
