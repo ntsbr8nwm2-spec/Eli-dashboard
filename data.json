@@ -1,6 +1,6 @@
 {
   "dateLabel": "Tue, Aug 25",
-  "updatedAt": "2026-08-25T22:00:13.326Z",
+  "updatedAt": "2026-08-26T03:40:01.629Z",
   "gradeStatus": "Current grades",
   "grades": [
     {
@@ -62,10 +62,28 @@
   ],
   "assignments": [
     {
-      "day": "FRI AUG 28",
-      "time": "11:05 AM",
-      "course": "Biology",
-      "title": "Properties of Molecules Building Activity (BIOLOGY 1..."
+      "day": "TOMORROW",
+      "time": "8:00 AM",
+      "course": "Anatomy",
+      "title": "Bell Ringer: Proximal/Distal VS Superior/Inferior (ANAT..."
+    },
+    {
+      "day": "TOMORROW",
+      "time": "8:00 AM",
+      "course": "Canvas",
+      "title": "Bell Ringer: Proximal/Distal VS Superior/Inferior (ANAT..."
+    },
+    {
+      "day": "TOMORROW",
+      "time": "9:10 AM",
+      "course": "Anatomy",
+      "title": "Exit Ticket: Body Planes (ANAT PHYSIO..."
+    },
+    {
+      "day": "TOMORROW",
+      "time": "9:10 AM",
+      "course": "Canvas",
+      "title": "Exit Ticket: Body Planes (ANAT PHYSIO..."
     },
     {
       "day": "FRI AUG 28",
@@ -98,8 +116,9 @@
       "title": "Review Questions for \"Tips for Shooting Better Video with..."
     }
   ],
-  "activityStatus": "Up to date",
+  "activityStatus": "1 new",
   "activity": [
+    "Digital Bus — Camera Orientation and Practice · 20/20 · A · 08/25 7:59 PM",
     "Anatomy — Bell ringer: Name 3 of the 6 Key directional terms · 2.5/5 · 50% · F · 08/25 10:32 AM",
     "Chorus — Participation/Rehearsal Effort/Wks.1&2 · 100/100 · A · 08/25 8:32 AM",
     "Anatomy — Bell ringer: Which systems work together for movement of the body? · 3.3/5 · 66% · D · 08/24 2:25 PM",
@@ -113,8 +132,7 @@
     "Digital Bus — Interviewing: In Class Exercise · 20/20 · A · 08/21 10:41 AM",
     "English — Syllabus Scavenger Hunt · 50/50 · 100% · A · 08/19 3:17 PM",
     "World Hist — Heimler History- The World Before 1200 CE Video and ACE discussion · 15/15 · 100% · A · 08/19 2:36 PM",
-    "Anatomy — Bell ringer: Name 3 body systems · 5/5 · 100% · A · 08/19 9:35 AM",
-    "Anatomy — Exit Ticket: What is the definition of Physiology? · 5/5 · 100% · A · 08/19 9:24 AM"
+    "Anatomy — Bell ringer: Name 3 body systems · 5/5 · 100% · A · 08/19 9:35 AM"
   ],
   "message": "Geometry waking up from a coma to a 50% is… progress, I guess. At least it’s not a flatline anymore. Keep climbing, because the rest of your grades are straight-up legendary and Geometry is the only one making you look mortal."
 }
