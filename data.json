@@ -1,6 +1,6 @@
 {
-  "dateLabel": "Fri, Aug 28",
-  "updatedAt": "2026-08-29T00:13:20.598Z",
+  "dateLabel": "Sat, Aug 29",
+  "updatedAt": "2026-08-29T12:14:05.938Z",
   "gradeStatus": "Current grades",
   "grades": [
     {
@@ -61,48 +61,6 @@
     }
   ],
   "assignments": [
-    {
-      "day": "TODAY",
-      "time": "11:05 AM",
-      "course": "Canvas",
-      "title": "2. Properties of Molecules Building Activity (BIOLOGY 1..."
-    },
-    {
-      "day": "TODAY",
-      "time": "11:59 PM",
-      "course": "Biology",
-      "title": "3. Chemistry of the Properties of Water Video Part 1..."
-    },
-    {
-      "day": "TODAY",
-      "time": "11:59 PM",
-      "course": "Canvas",
-      "title": "3. Chemistry of the Properties of Water Video Part 1..."
-    },
-    {
-      "day": "TODAY",
-      "time": "2:30 PM",
-      "course": "Digital Bus",
-      "title": "Newscast Critiques"
-    },
-    {
-      "day": "TODAY",
-      "time": "2:30 PM",
-      "course": "Canvas",
-      "title": "Newscast Critiques"
-    },
-    {
-      "day": "TODAY",
-      "time": "9:00 AM",
-      "course": "Anatomy",
-      "title": "Med Terms TEST #1 (ANAT PHYSIO..."
-    },
-    {
-      "day": "TODAY",
-      "time": "9:00 AM",
-      "course": "Canvas",
-      "title": "Med Terms TEST #1 (ANAT PHYSIO..."
-    },
     {
       "day": "MON AUG 31",
       "time": "11:59 PM",
