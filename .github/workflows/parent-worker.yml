@@ -57,6 +57,14 @@ jobs:
         continue-on-error: true
         run: node school-monitor.mjs 2>grade-stderr.txt
 
+      - name: Print safe Focus diagnostics
+        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'failure'
+        working-directory: /tmp/parent-school-run
+        run: |
+          echo "--- SAFE FOCUS AUTH DIAGNOSTICS ---"
+          if [ -f auth-debug.json ]; then cat auth-debug.json; else echo "No auth-debug.json was produced."; fi
+          echo "--- END SAFE FOCUS AUTH DIAGNOSTICS ---"
+
       - name: Save previous Canvas assignments
         if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success'
         working-directory: /tmp/parent-school-run
