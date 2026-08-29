@@ -1,7 +1,7 @@
 {
   "dateLabel": "Fri, Aug 28",
-  "updatedAt": "2026-08-28T22:00:35.335Z",
-  "gradeStatus": "🚨 1 change",
+  "updatedAt": "2026-08-29T00:13:20.598Z",
+  "gradeStatus": "Current grades",
   "grades": [
     {
       "course": "Anatomy",
@@ -15,7 +15,7 @@
       "display": "94% A",
       "percent": 94,
       "letter": "A",
-      "change": "CHANGED"
+      "change": ""
     },
     {
       "course": "English",
@@ -128,7 +128,7 @@
       "title": "Review Questions for \"Tips for Shooting Better Video with..."
     }
   ],
-  "activityStatus": "3 new",
+  "activityStatus": "Up to date",
   "activity": [
     "Biology — 3. Chemistry of the Properties of Water Video Part 1 Review with questions · 0/10 · 08/28 12:49 PM",
     "Digital Bus — Camera Orientation: day two · 08/28 8:20 AM",
