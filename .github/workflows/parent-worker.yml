@@ -7,6 +7,8 @@ on:
   push:
     paths:
       - 'parent-worker-client.mjs'
+      - 'school-monitor.mjs'
+      - 'focus-auth-probe.mjs'
       - '.github/workflows/parent-worker.yml'
 
 permissions:
