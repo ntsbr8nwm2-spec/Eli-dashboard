@@ -39,9 +39,17 @@ function cleanCanvasCourse(value) {
   return course;
 }
 
+function cleanActivityLine(value) {
+  return cleanText(value).replace(
+    /(Current grade:\s*(-?\d+(?:\.\d+)?)\/\s*-?\d+(?:\.\d+)?\s*·\s*-?\d+(?:\.\d+)?%)(?:\s*·\s*\2)(?=\s*·|$)/i,
+    "$1"
+  );
+}
+
 const data = JSON.parse(await fs.readFile(DATA_PATH, "utf8"));
 const original = Array.isArray(data.assignments) ? data.assignments : [];
 
+const seenAssignments = new Set();
 const cleaned = original
   .map(item => ({
     ...item,
@@ -50,13 +58,36 @@ const cleaned = original
     course: cleanCanvasCourse(item.course),
     title: cleanCanvasTitle(item.title)
   }))
-  .filter(item => item.title && item.title.length <= 220);
+  .filter(item => item.title && item.title.length <= 220)
+  .filter(item => {
+    // Canvas can expose the same agenda item twice with slightly different
+    // status/course metadata. Day + time + title identify the parent-visible task.
+    const key = [item.day, item.time, item.title]
+      .map(v => cleanText(v).toLowerCase())
+      .join("|");
+    if (seenAssignments.has(key)) return false;
+    seenAssignments.add(key);
+    return true;
+  });
 
+const originalActivity = Array.isArray(data.activity) ? data.activity : [];
+const cleanedActivity = originalActivity.map(cleanActivityLine);
+
+let changed = false;
 if (JSON.stringify(cleaned) !== JSON.stringify(original)) {
   data.assignments = cleaned;
+  changed = true;
+  console.log(`[SANITIZE] Cleaned ${original.length} Canvas assignment(s) down to ${cleaned.length}.`);
+}
+if (JSON.stringify(cleanedActivity) !== JSON.stringify(originalActivity)) {
+  data.activity = cleanedActivity;
+  changed = true;
+  console.log("[SANITIZE] Removed redundant Canvas score labels from activity.");
+}
+
+if (changed) {
   data.updatedAt = new Date().toISOString();
   await fs.writeFile(DATA_PATH, JSON.stringify(data, null, 2) + "\n", "utf8");
-  console.log(`[SANITIZE] Cleaned ${original.length} Canvas assignment(s).`);
 } else {
   console.log("[SANITIZE] No Canvas cleanup needed.");
 }
