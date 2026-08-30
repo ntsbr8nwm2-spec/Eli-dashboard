@@ -16,7 +16,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const log = s => console.log(`[CANVAS] ${s}`);
 
 function etParts() {
-  const parts = new Intl.DateTimeFormat("en-US", {timeZone:"America/New_York",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone:"America/New_York",year:"numeric",month:"2-digit",day:"2-digit"
+  }).formatToParts(new Date());
   return {
     year:Number(parts.find(p=>p.type==="year")?.value),
     month:Number(parts.find(p=>p.type==="month")?.value),
@@ -39,10 +41,102 @@ async function state(page){try{return await page.evaluate(()=>{const text=docume
 async function openCanvasTile(page){try{const r=await page.evaluate(()=>{const low=v=>String(v||"").toLowerCase();const direct=[...document.querySelectorAll("a[href]")].find(a=>low(a.href).includes("browardschools.instructure.com")||low(a.href).includes("instructure.com/login/saml"));if(direct)return{ok:true,href:direct.href};let e=[...document.querySelectorAll("img,a,button,div,span")].find(x=>[x.innerText,x.textContent,x.getAttribute?.("aria-label"),x.getAttribute?.("title"),x.getAttribute?.("alt"),x.getAttribute?.("src")].some(v=>low(v).includes("canvas")));for(let i=0;e&&i<12;i++,e=e.parentElement){if(e.tagName==="A"&&e.href)return{ok:true,href:e.href};const a=e.querySelector?.("a[href]");if(a?.href)return{ok:true,href:a.href};}return{ok:false,href:null};});if(!r.ok)return false;await gotoSafe(page,r.href);return true;}catch{return false;}}
 async function ensureCanvas(page){log("Opening Clever directly; skipping Focus completely.");await gotoSafe(page,CLEVER_URL).catch(()=>{});await sleep(1200);const end=Date.now()+65000;let ad=0,adLogin=0,mu=0,mp=0,acct=0,req=0,res=0,stay=0,tile=0;while(Date.now()<end){const s=await state(page);log(`Auth host: ${s.host||"unknown"}`);if(s.canvas){await sleep(2000);return true;}if(s.clever&&tile<6){tile++;if(await openCanvasTile(page)){await sleep(1800);continue;}}if(s.adButton&&ad<4){ad++;if(await clickAD(page)){await sleep(1000);continue;}}if(s.adForm&&adLogin<3){adLogin++;if(await submitAD(page)){await sleep(1500);continue;}}if(s.request&&req<4){req++;await submitSAML(page,"SAMLRequest");await sleep(700);continue;}if(s.msUser&&mu<3){mu++;await msUser(page);await sleep(900);continue;}if(s.msPass&&mp<3){mp++;await msPass(page);await sleep(900);continue;}if(acct<3&&await pickAccount(page)){acct++;await sleep(900);continue;}if(s.stay&&stay<2){stay++;await staySignedIn(page);await sleep(900);continue;}if(s.response&&res<4){res++;await submitSAML(page,"SAMLResponse");await sleep(1300);continue;}await sleep(450);}return false;}
 async function openAgenda(page){for(let a=1;a<=3;a++){await gotoSafe(page,`${CANVAS_CALENDAR}#view_name=agenda&view_start=${todayKey()}`).catch(()=>{});await sleep(4200);const ok=await page.evaluate(()=>String(location.hostname||"").toLowerCase()==="browardschools.instructure.com"&&(document.body?.innerText||"").includes("Agenda")).catch(()=>false);if(ok)return true;if(a<3)await sleep(2200);}return false;}
+
+async function canvasIdentityAndActivity(page){
+  try{
+    return await page.evaluate(async()=>{
+      const clean=v=>String(v||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
+      const get=async url=>{
+        try{
+          const r=await fetch(url,{credentials:"same-origin",headers:{"Accept":"application/json"}});
+          if(!r.ok)return null;
+          return await r.json();
+        }catch{return null;}
+      };
+      const [profile,stream,courses]=await Promise.all([
+        get("/api/v1/users/self/profile"),
+        get("/api/v1/users/self/activity_stream?per_page=25"),
+        get("/api/v1/courses?enrollment_state=active&per_page=100")
+      ]);
+      const courseMap={};
+      if(Array.isArray(courses)){
+        for(const c of courses){
+          const label=clean(c?.name||c?.course_code||"");
+          if(c?.id!=null&&label)courseMap[String(c.id)]=label;
+        }
+      }
+      const name=clean(profile?.short_name||profile?.name||profile?.sortable_name||"");
+      const firstName=clean(name.split(/\s+/)[0]||"").replace(/[^A-Za-zÀ-ÖØ-öø-ÿ'’-]/g,"").slice(0,40);
+      const activity=[];
+      if(Array.isArray(stream)){
+        for(const item of stream){
+          const title=clean(item?.title||item?.message||item?.notification_category||item?.type||"");
+          if(!title)continue;
+          const course=clean(courseMap[String(item?.course_id??"")]||item?.context_name||"");
+          let when="";
+          if(item?.created_at){
+            const d=new Date(item.created_at);
+            if(!Number.isNaN(d.getTime())) when=d.toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+          }
+          const line=[course,title,when].filter(Boolean).join(" — ");
+          if(line&&!activity.includes(line))activity.push(line);
+          if(activity.length>=15)break;
+        }
+      }
+      return {firstName,activity};
+    });
+  }catch{
+    return {firstName:"",activity:[]};
+  }
+}
+
 function dateKey(mon,day){const m=MONTHS.findIndex(x=>x.toLowerCase()===String(mon).toLowerCase());if(m<0)return null;const [y1,y2]=schoolYear();return `${m>=6?y1:y2}-${String(m+1).padStart(2,"0")}-${String(Number(day)).padStart(2,"0")}`;}
 function diffDays(a,b){const [ay,am,ad]=a.split("-").map(Number),[by,bm,bd]=b.split("-").map(Number);return Math.round((Date.UTC(ay,am-1,ad)-Date.UTC(by,bm-1,bd))/86400000);}
 function dayLabel(k){const d=diffDays(k,todayKey());if(d===0)return"TODAY";if(d===1)return"TOMORROW";const [y,m,day]=k.split("-").map(Number);return `${WEEKDAYS[new Date(Date.UTC(y,m-1,day)).getUTCDay()].toUpperCase()} ${MONTHS[m-1].toUpperCase()} ${day}`;}
-function parseAgenda(body){const clean=v=>String(v||"").replace(/\s+/g," ").trim();const lines=String(body||"").split(/\n+/).map(clean).filter(Boolean);const dateRe=/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat),\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\b/i,dueRe=/\bDue\s+(\d{1,2}:\d{2}\s*(?:am|pm))\b/i,statusRe=/\b(Not Completed|Completed|Submitted|Graded|Missing|Late)\b/i;const out=[];let date=null,p=null;const flush=()=>{if(!p)return;let t=p.parts.join(" ").replace(/\s+/g," ").trim();if(!t){p=null;return;}let title=t,course="",status="";const sm=t.match(statusRe);if(sm){status=sm[1];title=t.slice(0,sm.index).replace(/\s*,\s*$/,"").trim();course=t.slice(sm.index+sm[0].length).replace(/^Calendar\s+/i,"").trim();}else{const cm=t.match(/\s+Calendar\s+/i);if(cm){title=t.slice(0,cm.index).trim();course=t.slice(cm.index+cm[0].length).trim();}}title=title.replace(/^(Assignment|Quiz|Discussion)\s*,?\s*/i,"").trim();if(title)out.push({month:p.date.month,day:p.date.day,time:p.time,title,course,status,completed:["completed","submitted","graded"].includes(status.toLowerCase())});p=null;};for(const line of lines){const dm=line.match(dateRe);if(dm){flush();date={month:dm[2],day:Number(dm[3])};continue;}const due=line.match(dueRe);if(due&&date){flush();p={date,time:due[1],parts:[]};const rest=line.slice(due.index+due[0].length).replace(/^\s*,\s*/,"").trim();if(rest)p.parts.push(rest);continue;}if(p&&!['calendar','agenda','week','month','today','global navigation menu','create new event'].includes(line.toLowerCase()))p.parts.push(line);}flush();const seen=new Set();return out.filter(x=>{const k=[x.month,x.day,x.time,x.title,x.course,x.status].join("|").toLowerCase();if(seen.has(k))return false;seen.add(k);return true;});}
+function parseAgenda(body){const clean=v=>String(v||"").replace(/\s+/g," ").trim();const lines=String(body||"").split(/\n+/).map(clean).filter(Boolean);const dateRe=/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat),\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\b/i,dueRe=/\bDue\s+(\d{1,2}:\d{2}\s*(?:am|pm))\b/i,statusRe=/\b(Not Completed|Completed|Submitted|Graded|Missing|Late)\b/i;const out=[];let date=null,p=null;const flush=()=>{if(!p)return;let t=p.parts.join(" ").replace(/\s+/g," ").trim();if(!t){p=null;return;}let title=t,course="",status="";const sm=t.match(statusRe);if(sm){status=sm[1];title=t.slice(0,sm.index).replace(/\s*,\s*$/,"").trim();course=t.slice(sm.index+sm[0].length).replace(/^Calendar\s+/i,"").trim();}else{const cm=t.match(/\s+Calendar\s+/i);if(cm){title=t.slice(0,cm.index).trim();course=t.slice(cm.index+cm[0].length).trim();}}title=title.replace(/^(Assignment|Quiz|Discussion)\s*,?\s*/i,"").trim();if(title)out.push({month:p.date.month,day:p.date.day,time:p.time,title,course,status,completed:["completed","submitted","graded"].includes(status.toLowerCase())});p=null;};for(const line of lines){const dm=line.match(dateRe);if(dm){flush();date={month:dm[2],day:Number(dm[3])};continue;}const due=line.match(dueRe);if(due&&date){flush();p={date,time:due[1],parts:[]};const rest=line.slice(due.index+due[0].length).replace(/^\s*,\s*/,"").trim();if(rest)p.parts.push(rest);continue;}if(p&&!["calendar","agenda","week","month","today","global navigation menu","create new event"].includes(line.toLowerCase()))p.parts.push(line);}flush();const seen=new Set();return out.filter(x=>{const k=[x.month,x.day,x.time,x.title,x.course,x.status].join("|").toLowerCase();if(seen.has(k))return false;seen.add(k);return true;});}
 
-const browser=await chromium.launch({headless:true,args:["--disable-dev-shm-usage"]});const context=await browser.newContext({locale:"en-US",timezoneId:"America/New_York",viewport:{width:1280,height:900}});const page=await context.newPage();
-try{if(!(await ensureCanvas(page)))throw new Error("Canvas authentication timed out.");if(!(await openAgenda(page)))throw new Error("Canvas Agenda did not load.");const body=await page.locator("body").innerText().catch(()=>"");const raw=parseAgenda(body);const upcoming=[];for(const x of raw){if(x.completed)continue;const k=dateKey(x.month,x.day);if(!k)continue;const d=diffDays(k,todayKey());if(d<0||d>7)continue;upcoming.push({...x,key:k});}upcoming.sort((a,b)=>a.key.localeCompare(b.key)||String(a.time).localeCompare(String(b.time)));const assignments=upcoming.map(x=>({day:dayLabel(x.key),time:String(x.time||"").trim().replace(/(\d)(am|pm)$/i,"$1 $2").toUpperCase(),course:cleanCourse(x.course),title:x.title}));const data=await readJSON(DATA_PATH,null);if(!data)throw new Error("data.json could not be read.");data.assignments=assignments;data.updatedAt=new Date().toISOString();await fs.writeFile(DATA_PATH,JSON.stringify(data,null,2)+"\n","utf8");await fs.rm(DEBUG_PATH,{force:true}).catch(()=>{});log(`Published ${assignments.length} upcoming Canvas assignments.`);}catch(e){await fs.writeFile(DEBUG_PATH,JSON.stringify({at:new Date().toISOString(),reason:String(e),url:page.url()},null,2)+"\n","utf8").catch(()=>{});throw e;}finally{await browser.close();}
+const browser=await chromium.launch({headless:true,args:["--disable-dev-shm-usage"]});
+const context=await browser.newContext({locale:"en-US",timezoneId:"America/New_York",viewport:{width:1280,height:900}});
+const page=await context.newPage();
+
+try{
+  if(!(await ensureCanvas(page)))throw new Error("Canvas authentication timed out.");
+  const canvasMeta=await canvasIdentityAndActivity(page);
+  if(canvasMeta.firstName)log(`Canvas identified student first name as ${canvasMeta.firstName}.`);
+  if(!(await openAgenda(page)))throw new Error("Canvas Agenda did not load.");
+  const body=await page.locator("body").innerText().catch(()=>"");
+  const raw=parseAgenda(body);
+  const upcoming=[];
+  for(const x of raw){
+    if(x.completed)continue;
+    const k=dateKey(x.month,x.day);
+    if(!k)continue;
+    const d=diffDays(k,todayKey());
+    if(d<0||d>7)continue;
+    upcoming.push({...x,key:k});
+  }
+  upcoming.sort((a,b)=>a.key.localeCompare(b.key)||String(a.time).localeCompare(String(b.time)));
+  const assignments=upcoming.map(x=>({
+    day:dayLabel(x.key),
+    time:String(x.time||"").trim().replace(/(\d)(am|pm)$/i,"$1 $2").toUpperCase(),
+    course:cleanCourse(x.course),
+    title:x.title
+  }));
+  const data=await readJSON(DATA_PATH,null);
+  if(!data)throw new Error("data.json could not be read.");
+  data.assignments=assignments;
+  if(canvasMeta.firstName)data.studentName=canvasMeta.firstName;
+  if((!Array.isArray(data.activity)||!data.activity.length)&&canvasMeta.activity.length){
+    data.activity=canvasMeta.activity;
+    data.activityStatus="Recent Canvas activity";
+  }
+  data.updatedAt=new Date().toISOString();
+  await fs.writeFile(DATA_PATH,JSON.stringify(data,null,2)+"\n","utf8");
+  await fs.rm(DEBUG_PATH,{force:true}).catch(()=>{});
+  log(`Published ${assignments.length} upcoming Canvas assignments and ${canvasMeta.activity.length} Canvas activity items.`);
+}catch(e){
+  await fs.writeFile(DEBUG_PATH,JSON.stringify({at:new Date().toISOString(),reason:String(e),url:page.url()},null,2)+"\n","utf8").catch(()=>{});
+  throw e;
+}finally{
+  await browser.close();
+}
