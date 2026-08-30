@@ -64,20 +64,73 @@ try {
     const text = String(document.body?.innerText || "");
     const lower = text.toLowerCase();
     const has = (...phrases) => phrases.some(p => lower.includes(p));
+
+    const safeIds = [
+      "idSIButton9",
+      "idBtn_Back",
+      "idDiv_SAOTCS_Proofs",
+      "idDiv_SAOTCC_Description",
+      "idDiv_SAOTCS_Proofs_Section",
+      "idDiv_SAOTCC_Title",
+      "idDiv_SAOTCS_Title",
+      "idDiv_RemoteNgc_PollingDescription",
+      "idDiv_RemoteNgc_Title",
+      "idDiv_SAOTCAS_Title",
+      "idDiv_SAOTCAS_Description",
+      "idRichContext_DisplaySign",
+      "idRichContext_DisplaySignDescription",
+      "idRichContext_DisplaySignDescriptionLink",
+      "idDiv_SAOTCS_ProofConfirmation",
+      "idDiv_SAOTCS_ProofConfirmationDesc",
+      "idDiv_SAOTCS_ProofConfirmationTitle"
+    ].filter(id => Boolean(document.getElementById(id)));
+
+    const safeButtonLabels = [
+      "yes",
+      "no",
+      "continue",
+      "next",
+      "back",
+      "cancel",
+      "accept",
+      "decline",
+      "skip for now",
+      "sign in another way",
+      "use a different verification option",
+      "i can't use my microsoft authenticator app right now",
+      "approve",
+      "done",
+      "try again"
+    ];
+
+    const visibleSafeButtons = [...document.querySelectorAll('button,input[type="submit"],input[type="button"],a,[role="button"]')]
+      .map(el => String(el.innerText || el.value || el.textContent || "").trim().toLowerCase())
+      .filter(label => safeButtonLabels.includes(label))
+      .filter((label, i, arr) => arr.indexOf(label) === i);
+
     return {
       passwordInputPresent: Boolean(document.querySelector('#i0118, input[name="passwd"]')),
       usernameInputPresent: Boolean(document.querySelector('#i0116, input[name="loginfmt"]')),
       passwordRejected: has("password is incorrect", "incorrect password", "your account or password is incorrect", "password you entered is incorrect"),
       accountLocked: has("account has been locked", "account is locked", "temporarily locked"),
+      accountDisabled: has("account has been disabled", "account is disabled"),
       passwordExpired: has("password has expired", "update your password", "change your password"),
-      moreInfoRequired: has("more information required", "more info required"),
-      mfaChallenge: has("approve sign in request", "approve sign-in request", "enter code", "verification code", "verify your identity", "use your authenticator app"),
+      moreInfoRequired: has("more information required", "more info required", "your organization needs more information", "additional information is required"),
+      keepAccountSecure: has("keep your account secure", "let's keep your account secure", "help us protect your account", "set up your account"),
+      mfaChallenge: has("approve sign in request", "approve sign-in request", "enter code", "verification code", "verify your identity", "use your authenticator app", "microsoft authenticator", "choose a verification method", "sign in another way"),
       staySignedIn: has("stay signed in"),
-      accessBlocked: has("sign-in was blocked", "sign in was blocked", "you can't sign in here", "access has been blocked", "access denied"),
-      genericTrouble: has("sorry, but we're having trouble signing you in", "we couldn't sign you in", "we could not sign you in"),
+      conditionalAccess: has("you can't get there from here", "you cannot access this right now", "doesn't meet the criteria to access this resource", "does not meet the criteria to access this resource", "your sign-in was successful but", "device must be managed", "device needs to be managed", "compliant device"),
+      accessBlocked: has("sign-in was blocked", "sign in was blocked", "you can't sign in here", "you cannot sign in here", "access has been blocked", "access denied", "request denied"),
+      termsOrConsent: has("permissions requested", "review permissions", "terms of use", "accept the permissions", "consent on behalf"),
+      suspiciousActivity: has("suspicious activity", "unusual activity", "protect your account"),
+      authenticatorNumberMatch: has("enter the number shown", "match the number", "number matching"),
+      deviceCodePrompt: has("enter the code displayed", "code displayed on your app", "enter a code from your device"),
+      genericTrouble: has("sorry, but we're having trouble signing you in", "we couldn't sign you in", "we could not sign you in", "something went wrong"),
       samlResponse: Boolean(document.querySelector('input[name="SAMLResponse"]')),
       samlRequest: Boolean(document.querySelector('input[name="SAMLRequest"]')),
       continuePrompt: has("continue"),
+      safeIds,
+      visibleSafeButtons,
       bodyLength: text.length
     };
   }).catch(() => ({}));
