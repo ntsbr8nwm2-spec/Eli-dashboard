@@ -1,6 +1,6 @@
 {
   "dateLabel": "Sat, Aug 29",
-  "updatedAt": "2026-08-29T21:14:01.669Z",
+  "updatedAt": "2026-08-30T00:14:45.282Z",
   "gradeStatus": "Current grades",
   "grades": [
     {
@@ -60,9 +60,35 @@
       "change": ""
     }
   ],
-  "assignments": [],
-  "activityStatus": "Up to date",
+  "assignments": [
+    {
+      "day": "MON AUG 31",
+      "time": "11:59 PM",
+      "course": "Biology",
+      "title": "4. Chemistry of the Properties of Water Video Part 2..."
+    },
+    {
+      "day": "MON AUG 31",
+      "time": "11:59 PM",
+      "course": "Canvas",
+      "title": "4. Chemistry of the Properties of Water Video Part 2..."
+    },
+    {
+      "day": "MON AUG 31",
+      "time": "11:59 PM",
+      "course": "Digital Bus",
+      "title": "Review Questions for \"Tips for Shooting Better Video with..."
+    },
+    {
+      "day": "MON AUG 31",
+      "time": "11:59 PM",
+      "course": "Canvas",
+      "title": "Review Questions for \"Tips for Shooting Better Video with..."
+    }
+  ],
+  "activityStatus": "1 new",
   "activity": [
+    "Digital Bus — Introduction Video · 30/30 · A · 08/29 7:26 PM",
     "Biology — 3. Chemistry of the Properties of Water Video Part 1 Review with questions · 0/10 · 08/28 12:49 PM",
     "Digital Bus — Camera Orientation: day two · 08/28 8:20 AM",
     "Biology — 2. Properties of Molecules Building Activity · 10/10 · A · 08/28 4:49 AM",
@@ -73,8 +99,7 @@
     "Anatomy — Bell ringer: Name 3 of the 6 Key directional terms · 2.5/5 · 50% · F · 08/25 10:32 AM",
     "Chorus — Participation/Rehearsal Effort/Wks.1&2 · 100/100 · A · 08/25 8:32 AM",
     "Anatomy — Bell ringer: Which systems work together for movement of the body? · 3.3/5 · 66% · D · 08/24 2:25 PM",
-    "Anatomy — Exit ticket: What is the anatomical position · 5/5 · 100% · A · 08/24 2:24 PM",
-    "Anatomy — Exit ticket: Name 5/8 necessary functions for life · 5/5 · 100% · A · 08/24 2:16 PM"
+    "Anatomy — Exit ticket: What is the anatomical position · 5/5 · 100% · A · 08/24 2:24 PM"
   ],
   "message": "Geometry waking up from a coma to a 50% is… progress, I guess. At least it’s not a flatline anymore. Keep climbing, because the rest of your grades are straight-up legendary and Geometry is the only one making you look mortal."
 }
