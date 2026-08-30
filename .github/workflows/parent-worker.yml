@@ -8,6 +8,8 @@ on:
     paths:
       - 'parent-worker-client.mjs'
       - 'school-monitor.mjs'
+      - 'canvas-only.mjs'
+      - 'focus-news-v2.mjs'
       - 'focus-parent-monitor.mjs'
       - 'focus-auth-probe.mjs'
       - 'focus-clever-probe.mjs'
