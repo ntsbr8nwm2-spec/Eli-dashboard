@@ -2,75 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#163b65">
-<title>Eli School Dashboard</title>
-<meta name="description" content="Eli's live school dashboard — grades, Canvas assignments, and activity.">
-<meta property="og:type" content="website">
-<meta property="og:title" content="🎓 Eli School Dashboard">
-<meta property="og:description" content="Grades • Canvas assignments • School activity">
-<meta property="og:url" content="https://ntsbr8nwm2-spec.github.io/Eli-dashboard/">
-<meta property="og:image" content="https://ntsbr8nwm2-spec.github.io/Eli-dashboard/preview.png?v=4">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="🎓 Eli School Dashboard">
-<meta name="twitter:description" content="Grades • Canvas assignments • School activity">
-<meta name="twitter:image" content="https://ntsbr8nwm2-spec.github.io/Eli-dashboard/preview.png?v=4">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2315395f'/><text x='50' y='63' font-size='58' text-anchor='middle'>🎓</text></svg>">
-<style>
-:root{--bg:#f4f7fb;--card:#fff;--ink:#172033;--muted:#6f7d90;--navy:#15395f;--blue:#2877ba;--line:#e9eef4;--good:#17834a;--warn:#c58a12;--bad:#c64249;--neutral:#748196}
-*{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#edf4fb 0,#f7f9fc 420px);color:var(--ink)}
-.hero{padding:calc(16px + env(safe-area-inset-top)) 20px 17px;background:linear-gradient(135deg,#112f50,#286ca5);color:#fff;border-radius:0 0 24px 24px;box-shadow:0 9px 26px rgba(20,55,90,.15)}
-.kicker{font-size:10.5px;font-weight:800;letter-spacing:1.5px;opacity:.7}.hero h1{font-size:30px;line-height:1;margin:5px 0 4px}.date{font-size:15px;opacity:.92}.updated{font-size:11px;opacity:.7;margin-top:8px}
-.wrap{max-width:900px;margin:0 auto;padding:12px 16px calc(44px + env(safe-area-inset-bottom))}.card{background:var(--card);border-radius:22px;padding:18px;margin-bottom:16px;box-shadow:0 8px 30px rgba(25,52,82,.07)}
-.head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.head h2{margin:0;font-size:20px}.status{font-size:12px;font-weight:750;color:var(--muted);text-align:right}
-
-/* Focus-inspired grade cards — compact mobile layout */
-.grades{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.grade{--theme1:#4e2864;--theme2:#754096;border:1px solid #d8dde5;background:#fff;border-radius:15px;overflow:hidden;min-height:146px;box-shadow:0 2px 3px rgba(20,36,55,.05);position:relative}
-.gradeVisual{height:88px;position:relative;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(145deg,var(--theme1),var(--theme2));overflow:hidden}
-.gradeVisual::before{content:attr(data-icon);position:absolute;left:13px;bottom:-15px;font-size:74px;line-height:1;opacity:.12;filter:grayscale(1);transform:rotate(-8deg)}
-.gradeVisual::after{content:"";position:absolute;right:-24px;top:-20px;width:92px;height:92px;border-radius:28px;border:12px solid rgba(255,255,255,.055);transform:rotate(13deg)}
-.gradeLetter{font-size:49px;line-height:1;font-weight:850;letter-spacing:-2px;text-shadow:0 1px 1px rgba(0,0,0,.08);z-index:2}
-.gradePercent{position:absolute;right:10px;top:8px;font-size:16px;font-weight:850;z-index:3;letter-spacing:-.2px}
-.gradePercent .trend{font-size:14px;margin-right:1px;vertical-align:1px}
-.gradeInfo{min-height:56px;padding:9px 11px 10px;display:flex;align-items:flex-start;background:#fff}
-.course{font-size:14.5px;font-weight:600;line-height:1.15;color:#161a22;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.gradeChange{position:absolute;left:8px;top:8px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(4px);color:#fff;border-radius:999px;padding:3px 6px;font-size:8px;font-weight:850;letter-spacing:.2px;z-index:4;max-width:43%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.grade.a{--theme1:#5f205f;--theme2:#8e3a8d}.grade.b{--theme1:#0b6f80;--theme2:#169bb0}.grade.c{--theme1:#a45800;--theme2:#d77a12}.grade.low{--theme1:#9d173f;--theme2:#cb2255}.grade.ng{--theme1:#146678;--theme2:#1596aa}
-.grade.subject-biology{--theme1:#8b1543;--theme2:#bd2356}.grade.subject-anatomy{--theme1:#552269;--theme2:#7e3e96}.grade.subject-english{--theme1:#795e00;--theme2:#a58508}.grade.subject-geometry{--theme1:#076654;--theme2:#0e9476}.grade.subject-digital{--theme1:#9f3706;--theme2:#d2610f}.grade.subject-history{--theme1:#0b667f;--theme2:#0e96b4}.grade.subject-chorus{--theme1:#5c246c;--theme2:#863a98}.grade.subject-study{--theme1:#425d77;--theme2:#647f9b}
-
-.day{font-size:12px;font-weight:900;letter-spacing:1px;color:var(--muted);margin:17px 2px 7px}.day:first-child{margin-top:0}.assignment{display:grid;grid-template-columns:78px 1fr;gap:12px;padding:13px 3px;border-bottom:1px solid var(--line)}.assignment:last-child{border-bottom:0}.time{font-size:13px;font-weight:850;color:#24669d}.assignmentCourse{font-size:11px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:#24669d;margin-bottom:3px}.title{font-size:15px;font-weight:650;line-height:1.35}.activity{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;line-height:1.4}.activity:last-child{border-bottom:0}.empty{font-size:14px;color:var(--muted);padding:4px 0}
-.message{background:linear-gradient(135deg,#fff6db,#fffaf0);border:1px solid #f2dfad}.messageLabel{font-size:12px;font-weight:900;letter-spacing:.7px;color:#8a6817;margin-bottom:7px}.messageText{font-size:15px;line-height:1.45}.foot{text-align:center;color:#9aa5b3;font-size:11px;margin-top:3px}
-@media(max-width:390px){.grade{min-height:140px}.gradeVisual{height:84px}.gradeLetter{font-size:46px}.course{font-size:14px}.gradePercent{font-size:15px}.gradeInfo{min-height:54px;padding:8px 10px 9px}}
-@media(min-width:700px){.grades{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.wrap{padding-top:18px}.gradeVisual{height:102px}.grade{min-height:166px}.gradeLetter{font-size:56px}.gradeInfo{min-height:62px}.course{font-size:15px}}
-</style>
-<meta property="og:image:type" content="image/png">
-<link rel="apple-touch-icon" href="https://ntsbr8nwm2-spec.github.io/Eli-dashboard/icon.png?v=4">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#173b63">
+<title>Broward Parent School Dashboards</title>
+<meta name="description" content="Private parent school dashboards for connected students.">
+<meta http-equiv="refresh" content="0; url=./signup/">
+<script>location.replace('./signup/');</script>
 </head>
 <body>
-<header class="hero"><div class="kicker">SCHOOL DASHBOARD</div><h1>🎓 ELI</h1><div class="date" id="schoolDate">Latest school update</div><div class="updated" id="updated">Loading…</div></header>
-<main class="wrap">
-<section class="card"><div class="head"><h2>Grades</h2><div class="status" id="gradeStatus">Current grades</div></div><div class="grades" id="grades"></div></section>
-<section class="card"><div class="head"><h2>📅 Canvas Due</h2><div class="status" id="dueCount"></div></div><div id="assignments"></div></section>
-<section class="card"><div class="head"><h2>📰 Activity</h2><div class="status" id="activityStatus"></div></div><div id="activity"></div></section>
-<section class="card message" id="messageCard" hidden><div class="messageLabel">😎 MESSAGE OF THE DAY</div><div class="messageText" id="message"></div></section>
-<div class="foot">Focus + Canvas school monitor</div>
-</main>
-<script>
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function gradeClass(g){const l=String(g.letter||'').toUpperCase();if(l.startsWith('A'))return'a';if(l.startsWith('B'))return'b';if(l.startsWith('C'))return'c';if(l.startsWith('D')||l.startsWith('F'))return'low';return'ng'}
-function subjectTheme(course){const c=String(course||'').toLowerCase();if(c.includes('biology'))return['subject-biology','🧬'];if(c.includes('anatom'))return['subject-anatomy','🫀'];if(c.includes('english'))return['subject-english','📚'];if(c.includes('geometry')||c.includes('math'))return['subject-geometry','📐'];if(c.includes('digital')||c.includes('business'))return['subject-digital','💻'];if(c.includes('history')||c.includes('world hist'))return['subject-history','🌎'];if(c.includes('chorus')||c.includes('music'))return['subject-chorus','♫'];if(c.includes('study'))return['subject-study','✎'];return['','🎓']}
-function trendMarkup(g){const change=String(g.change||'').toLowerCase();if(change.includes('→')||change.includes('up')||change.includes('increase'))return'<span class="trend">↗</span>';if(change.includes('down')||change.includes('decrease'))return'<span class="trend">↘</span>';return''}
-function render(d){document.getElementById('schoolDate').textContent=d.dateLabel||'Latest school update';document.getElementById('gradeStatus').textContent=d.gradeStatus||'Current grades';const when=d.updatedAt?new Date(d.updatedAt):new Date();document.getElementById('updated').textContent='Updated '+when.toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-const grades=document.getElementById('grades');grades.innerHTML=(d.grades||[]).map(g=>{const theme=subjectTheme(g.course);const display=String(g.display||g.letter||'NG');const rawPct=Number(g.percent);const hasPct=Number.isFinite(rawPct);const pct=hasPct?`${rawPct}%`:display;const letter=String(g.letter||'NG').toUpperCase();return `<div class="grade ${gradeClass(g)} ${theme[0]}"><div class="gradeVisual" data-icon="${esc(theme[1])}">${g.change?`<div class="gradeChange">${esc(g.change)}</div>`:''}<div class="gradePercent">${trendMarkup(g)}${esc(pct)}</div><div class="gradeLetter">${esc(letter)}</div></div><div class="gradeInfo"><div class="course">${esc(g.course)}</div></div></div>`}).join('')||'<div class="empty">No grade data yet.</div>';
-const assignments=d.assignments||[];document.getElementById('dueCount').textContent=assignments.length?`${assignments.length} upcoming`:'Nothing due';const a=document.getElementById('assignments');let last='';a.innerHTML=assignments.map(x=>{let h='';if(x.day!==last){last=x.day;h=`<div class="day">${esc(x.day)}</div>`}return h+`<div class="assignment"><div class="time">${esc(x.time)}</div><div><div class="assignmentCourse">${esc(x.course||'Canvas')}</div><div class="title">${esc(x.title)}</div></div></div>`}).join('')||'<div class="empty">No unfinished Canvas work showing right now.</div>';
-const activity=d.activity||[];document.getElementById('activityStatus').textContent=d.activityStatus||'Nothing new';document.getElementById('activity').innerHTML=activity.length?activity.map(x=>`<div class="activity">${esc(x)}</div>`).join(''):'<div class="empty">Nothing new</div>';
-if(d.message){document.getElementById('messageCard').hidden=false;document.getElementById('message').textContent=d.message}else document.getElementById('messageCard').hidden=true}
-const DATA_URL='https://raw.githubusercontent.com/ntsbr8nwm2-spec/Eli-dashboard/main/data.json';
-fetch(DATA_URL+'?t='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('No data yet');return r.json()}).then(render).catch(()=>{document.getElementById('updated').textContent='Run the school check once to publish the first update.';document.getElementById('grades').innerHTML='<div class="empty">Waiting for first update.</div>';document.getElementById('assignments').innerHTML='<div class="empty">Waiting for first update.</div>';document.getElementById('activity').innerHTML='<div class="empty">Waiting for first update.</div>'});
-</script>
+<p>Opening your school dashboards… <a href="./signup/">Continue</a></p>
 </body>
 </html>
