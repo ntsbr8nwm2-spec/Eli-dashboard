@@ -105,26 +105,24 @@ jobs:
         working-directory: /tmp/parent-school-run
         run: node canvas-guard.mjs after
 
-      - name: Run Focus activity
-        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'success'
-        id: news
-        working-directory: /tmp/parent-school-run
-        continue-on-error: true
-        run: |
-          for attempt in 1 2 3; do
-            echo "Focus News attempt $attempt"
-            if node focus-news-v2.mjs; then exit 0; fi
-            if [ "$attempt" -lt 3 ]; then sleep 4; fi
-          done
-          exit 1
-
-      - name: Sanitize student-login dashboard data
+      - name: Sanitize base dashboard data
         if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success'
         working-directory: /tmp/parent-school-run
         run: node sanitize-dashboard.mjs
 
-      - name: Publish student-login dashboard
+      - name: Publish grades Canvas and fallback activity
         if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success'
+        run: node parent-worker-client.mjs publish
+
+      - name: Run Focus activity
+        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success'
+        id: news
+        working-directory: /tmp/parent-school-run
+        continue-on-error: true
+        run: node focus-news-v2.mjs
+
+      - name: Publish richer Focus activity
+        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.news.outcome == 'success'
         run: node parent-worker-client.mjs publish
 
       - name: Publish Parent Portal dashboard
