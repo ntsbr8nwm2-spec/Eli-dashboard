@@ -1,14 +1,4 @@
 // Secure client used by the GitHub-hosted parent dashboard worker.
-// Pilot OIDC retry.
-// Signature verification retry.
-// Immutable subject retry.
-// Diagnostic retry.
-// Lease ambiguity fix retry.
-// One-time secure pilot restore support.
-// Restored pilot run.
-// Safe failure-detail capture.
-// Grade stderr capture.
-// Onboarding trigger 2026-08-24 16:43 EDT.
 import fs from 'node:fs/promises';
 
 const SUPABASE_URL='https://vihtghmtnnozflnmecis.supabase.co';
@@ -81,13 +71,14 @@ async function lease(){
   await appendEnv('STUDENT_FIRST_NAME',job.first_name||'Student');
   await appendEnv('BCPS_USERNAME',job.school_username);
   await appendEnv('BCPS_PASSWORD',job.school_password);
+  await appendEnv('SCHOOL_LOGIN_METHOD',job.login_method||'student_sso');
 
   const initial={dateLabel:'Latest school update',updatedAt:new Date().toISOString(),gradeStatus:'Current grades',grades:[],assignments:[],activityStatus:'Nothing new',activity:[]};
   const data=job.dashboard_data&&Object.keys(job.dashboard_data).length?job.dashboard_data:initial;
   await fs.writeFile(`${WORKDIR}/data.json`,JSON.stringify(data,null,2)+'\n');
   await fs.writeFile(`${WORKDIR}/news-state.json`,JSON.stringify(job.news_state||{},null,2)+'\n');
   await fs.writeFile(`${WORKDIR}/canvas-state.json`,JSON.stringify(job.canvas_state||{},null,2)+'\n');
-  console.log(`[PARENT] Leased dashboard job for ${job.first_name||'student'}.`);
+  console.log(`[PARENT] Leased dashboard job for ${job.first_name||'student'} using ${job.login_method||'student_sso'}.`);
 }
 
 async function publish(){
