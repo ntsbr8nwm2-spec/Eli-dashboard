@@ -43,11 +43,6 @@ button.primary{width:100%;border:0;border-radius:14px;padding:15px 16px;backgrou
       <h2 class="title" id="formTitle">Create parent account</h2>
       <div class="sub" id="formSub">Use your own email and create a password for this dashboard. This is separate from the student's school password.</div>
 
-      <div id="studentField">
-        <label for="student">Student first name</label>
-        <input id="student" type="text" autocomplete="off" placeholder="Jordan" maxlength="40">
-      </div>
-
       <label for="email">Parent email</label>
       <input id="email" type="email" autocomplete="email" placeholder="you@example.com">
 
@@ -57,7 +52,7 @@ button.primary{width:100%;border:0;border-radius:14px;padding:15px 16px;backgrou
         <button class="show" id="showPassword" type="button">SHOW</button>
       </div>
 
-      <label id="consentWrap" class="check"><input id="consent" type="checkbox"><span>I am the parent/guardian or otherwise authorized to access this student's school information.</span></label>
+      <label id="consentWrap" class="check"><input id="consent" type="checkbox"><span>I am the parent/guardian or otherwise authorized to access the student's school information.</span></label>
 
       <div class="note"><strong>🔒 Parent account</strong>Your dashboard login is handled by Supabase Auth. School credentials are entered only after you are signed in.</div>
 
@@ -81,15 +76,17 @@ button.primary{width:100%;border:0;border-radius:14px;padding:15px 16px;backgrou
         </div>
         <div class="secure">🔐 Your school username and password go through an authenticated Supabase backend and are encrypted before storage. They are never written to GitHub or the public dashboard.</div>
 
-        <label for="linkedStudentName">Student first name</label>
-        <input id="linkedStudentName" type="text" autocomplete="off" placeholder="Jordan" maxlength="40">
-
         <label>How do you normally sign in?</label>
         <div class="methodTabs">
           <button id="studentSsoTab" class="methodTab active" type="button">Student BCPS login</button>
           <button id="parentPortalTab" class="methodTab" type="button">Focus Parent Portal</button>
         </div>
-        <div class="methodNote" id="methodNote">Use the student's BCPS/Microsoft username and password. This supports Focus + Canvas when BCPS permits cloud sign-in.</div>
+        <div class="methodNote" id="methodNote">Use the student's BCPS/Microsoft username and password. Canvas will identify the student name automatically after the first successful sync.</div>
+
+        <div id="linkedStudentNameWrap" hidden>
+          <label for="linkedStudentName">Student first name</label>
+          <input id="linkedStudentName" type="text" autocomplete="off" placeholder="Jordan" maxlength="40">
+        </div>
 
         <label for="bcpsUsername" id="schoolUsernameLabel">Student BCPS username</label>
         <input id="bcpsUsername" type="text" autocomplete="username" placeholder="Student username" autocapitalize="none" spellcheck="false">
@@ -138,7 +135,6 @@ function setMode(next){
   const creating=mode==='create';
   $('createTab').classList.toggle('active',creating);
   $('loginTab').classList.toggle('active',!creating);
-  $('studentField').hidden=!creating;
   $('consentWrap').hidden=!creating;
   $('formTitle').textContent=creating?'Create parent account':'Sign in';
   $('formSub').textContent=creating?'Use your own email and create a password for this dashboard. This is separate from the student’s school password.':'Sign in with the parent account you already created.';
@@ -152,13 +148,14 @@ function setLoginMethod(method){
   const parent=loginMethod==='parent_portal';
   $('studentSsoTab').classList.toggle('active',!parent);
   $('parentPortalTab').classList.toggle('active',parent);
+  $('linkedStudentNameWrap').hidden=!parent;
   $('schoolUsernameLabel').textContent=parent?'Focus Parent Portal username':'Student BCPS username';
   $('schoolPasswordLabel').textContent=parent?'Focus Parent Portal password':'Student BCPS password';
   $('bcpsUsername').placeholder=parent?'Parent Portal username':'Student username';
   $('bcpsPassword').placeholder=parent?'Parent Portal password':'Student password';
   $('methodNote').textContent=parent
-    ? 'Use the parent/guardian Focus username and password. This avoids the student Microsoft sign-in route. Parent Portal support currently builds the Focus grades view; Canvas still requires the student BCPS route.'
-    : 'Use the student’s BCPS/Microsoft username and password. This supports Focus + Canvas when BCPS permits cloud sign-in.';
+    ? 'Use the parent/guardian Focus username and password. Enter the student first name so the correct linked child can be selected. Parent Portal support currently builds the Focus grades view; Canvas still requires the student BCPS route.'
+    : 'Use the student’s BCPS/Microsoft username and password. Canvas will identify the student name automatically after the first successful sync.';
 }
 function connectionUI(status){
   const connected=status==='connected';
@@ -168,9 +165,8 @@ function connectionUI(status){
   $('disconnectBcps').hidden=!connected;
   $('openDashboard').hidden=!connected;
 }
-async function ensureStudent(user){
-  const firstName=String(user?.user_metadata?.student_first_name||'Student').trim()||'Student';
-  const {data,error}=await supabase.rpc('get_or_create_student',{p_first_name:firstName});
+async function ensureStudent(){
+  const {data,error}=await supabase.rpc('get_or_create_student',{p_first_name:'Student'});
   if(error) throw error;
   currentStudent=data;
   return data;
@@ -193,9 +189,9 @@ async function showAccount(user){
   $('account').classList.add('showAccount');
   $('accountEmail').textContent=user?.email||'';
   try{
-    const student=await ensureStudent(user);
-    $('accountStudent').textContent=`${student.first_name}'s dashboard`;
-    $('linkedStudentName').value=student.first_name||'';
+    const student=await ensureStudent();
+    $('accountStudent').textContent=student.first_name && student.first_name!=='Student'?`${student.first_name}'s dashboard`:'Student dashboard';
+    $('linkedStudentName').value=student.first_name==='Student'?'':(student.first_name||'');
     connectionUI(student.connection_status);
     await loadConnectionMethod();
     const managing=new URLSearchParams(location.search).get('manage')==='1';
@@ -232,11 +228,10 @@ $('submit').addEventListener('click',async()=>{
   clearMessage();
   const email=$('email').value.trim();
   const password=$('parentPassword').value;
-  const student=$('student').value.trim();
 
   if(!email || !password){ message('Enter your email and dashboard password.','bad'); return; }
   if(password.length<8){ message('Use at least 8 characters for your dashboard password.','bad'); return; }
-  if(mode==='create' && (!student || !$('consent').checked)){ message('Add the student first name and confirm authorization.','bad'); return; }
+  if(mode==='create' && !$('consent').checked){ message('Confirm that you are authorized to access the student’s school information.','bad'); return; }
 
   setBusy(true);
   try{
@@ -244,7 +239,7 @@ $('submit').addEventListener('click',async()=>{
       const {data,error}=await supabase.auth.signUp({
         email,
         password,
-        options:{data:{student_first_name:student},emailRedirectTo:window.location.href.split('#')[0].split('?')[0]}
+        options:{emailRedirectTo:window.location.href.split('#')[0].split('?')[0]}
       });
       if(error) throw error;
       if(data.session){
@@ -270,18 +265,18 @@ $('connectBcps').addEventListener('click',async()=>{
   const password=$('bcpsPassword').value;
   const studentName=$('linkedStudentName').value.trim();
   if(!currentStudent){ message('Student profile is not ready yet. Refresh and try again.','bad','connectResult'); return; }
-  if(!studentName){ message('Enter the student first name.','bad','connectResult'); return; }
+  if(loginMethod==='parent_portal' && !studentName){ message('Enter the student first name for the Focus Parent Portal connection.','bad','connectResult'); return; }
   if(!username||!password){ message(loginMethod==='parent_portal'?'Enter the Focus Parent Portal username and password.':'Enter the student BCPS username and password.','bad','connectResult'); return; }
   const btn=$('connectBcps'); btn.disabled=true; const old=btn.textContent; btn.textContent='Encrypting…';
   try{
-    if(studentName!==currentStudent.first_name){
+    if(loginMethod==='parent_portal' && studentName!==currentStudent.first_name){
       const {data:userUpdate,error:userUpdateError}=await supabase.auth.updateUser({data:{...(currentUser?.user_metadata||{}),student_first_name:studentName}});
       if(userUpdateError) throw userUpdateError;
       currentUser=userUpdate?.user||currentUser;
-      const {data:studentUpdate,error:studentUpdateError}=await supabase.rpc('get_or_create_student',{p_first_name:studentName});
+      const {data:rows,error:studentUpdateError}=await supabase.from('students').update({first_name:studentName}).eq('id',currentStudent.id).select().limit(1);
       if(studentUpdateError) throw studentUpdateError;
-      currentStudent=studentUpdate;
-      $('accountStudent').textContent=`${currentStudent.first_name}'s dashboard`;
+      if(rows?.[0]) currentStudent=rows[0];
+      $('accountStudent').textContent=`${studentName}'s dashboard`;
     }
 
     const {data,error}=await supabase.functions.invoke('school-credentials',{
@@ -294,7 +289,7 @@ $('connectBcps').addEventListener('click',async()=>{
     $('bcpsUsername').value=''; $('bcpsPassword').value='';
     message(loginMethod==='parent_portal'
       ? '✅ Focus Parent Portal login securely saved. A fresh Focus grade build is now queued.'
-      : '✅ Student school login securely saved. Your dashboard will open as soon as the first school update is ready.','good','connectResult');
+      : '✅ Student school login securely saved. Canvas will identify the student automatically during the first successful sync.','good','connectResult');
   }catch(error){
     message(error?.message||'Could not securely save the school login.','bad','connectResult');
   }finally{ btn.disabled=false; if(currentStudent?.connection_status!=='connected')btn.textContent=old; }
