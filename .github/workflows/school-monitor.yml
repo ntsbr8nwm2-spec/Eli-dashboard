@@ -2,20 +2,9 @@ name: Unattended school monitor
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'school-monitor.mjs'
-      - 'canvas-only.mjs'
-      - 'canvas-guard.mjs'
-      - 'focus-news.mjs'
-      - 'focus-news-v2.mjs'
-      - 'sanitize-dashboard.mjs'
-      - 'parent-worker-client.mjs'
-      - '.github/workflows/school-monitor.yml'
 
 permissions:
   contents: write
-  id-token: write
 
 concurrency:
   group: unattended-school-monitor
@@ -88,13 +77,6 @@ jobs:
       - name: Sanitize Canvas dashboard output
         if: steps.monitor.outcome == 'success'
         run: node sanitize-dashboard.mjs
-
-      - name: Move Eli into private parent system
-        if: steps.monitor.outcome == 'success' && steps.canvas.outcome == 'success'
-        env:
-          BCPS_USERNAME: ${{ secrets.BCPS_USERNAME }}
-          BCPS_PASSWORD: ${{ secrets.BCPS_PASSWORD }}
-        run: node parent-worker-client.mjs migrate-legacy
 
       - name: Commit dashboard, state, or safe diagnostics
         if: always()
