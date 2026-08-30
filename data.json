@@ -1,6 +1,6 @@
 {
   "dateLabel": "Sat, Aug 29",
-  "updatedAt": "2026-08-30T01:57:24.434Z",
+  "updatedAt": "2026-08-30T02:13:52.930Z",
   "gradeStatus": "Current grades",
   "grades": [
     {
@@ -60,33 +60,8 @@
       "change": ""
     }
   ],
-  "assignments": [
-    {
-      "day": "MON AUG 31",
-      "time": "11:59 PM",
-      "course": "Biology",
-      "title": "4. Chemistry of the Properties of Water Video Part 2..."
-    },
-    {
-      "day": "MON AUG 31",
-      "time": "11:59 PM",
-      "course": "Canvas",
-      "title": "4. Chemistry of the Properties of Water Video Part 2..."
-    },
-    {
-      "day": "MON AUG 31",
-      "time": "11:59 PM",
-      "course": "Digital Bus",
-      "title": "Review Questions for \"Tips for Shooting Better Video with..."
-    },
-    {
-      "day": "MON AUG 31",
-      "time": "11:59 PM",
-      "course": "Canvas",
-      "title": "Review Questions for \"Tips for Shooting Better Video with..."
-    }
-  ],
-  "activityStatus": "1 new",
+  "assignments": [],
+  "activityStatus": "Up to date",
   "activity": [
     "Digital Bus — Introduction Video · 30/30 · A · 08/29 7:26 PM",
     "Biology — 3. Chemistry of the Properties of Water Video Part 1 Review with questions · 0/10 · 08/28 12:49 PM",

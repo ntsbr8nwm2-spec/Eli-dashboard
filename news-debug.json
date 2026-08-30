@@ -1,9 +1,0 @@
-{
-  "at": "2026-08-30T02:00:31.828Z",
-  "reason": "Error: Focus login failed for News collector.",
-  "page": {
-    "host": "browardschools.focusschoolsoftware.com",
-    "path": "/focus/Modules.php"
-  },
-  "diagnostics": []
-}
