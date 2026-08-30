@@ -8,6 +8,7 @@ on:
     paths:
       - 'parent-worker-client.mjs'
       - 'school-monitor.mjs'
+      - 'focus-parent-monitor.mjs'
       - 'focus-auth-probe.mjs'
       - 'focus-clever-probe.mjs'
       - '.github/workflows/parent-worker.yml'
@@ -43,7 +44,7 @@ jobs:
       - name: Prepare isolated student workspace
         if: env.NO_PARENT_JOB != 'true'
         run: |
-          cp school-monitor.mjs canvas-only.mjs canvas-guard.mjs focus-news-v2.mjs sanitize-dashboard.mjs focus-auth-probe.mjs focus-clever-probe.mjs "$PARENT_WORKDIR"/
+          cp school-monitor.mjs focus-parent-monitor.mjs canvas-only.mjs canvas-guard.mjs focus-news-v2.mjs sanitize-dashboard.mjs focus-auth-probe.mjs focus-clever-probe.mjs "$PARENT_WORKDIR"/
           chmod 700 "$PARENT_WORKDIR"
           chmod 600 "$PARENT_WORKDIR"/*.json || true
 
@@ -58,10 +59,15 @@ jobs:
         id: grades
         working-directory: /tmp/parent-school-run
         continue-on-error: true
-        run: node school-monitor.mjs 2>grade-stderr.txt
+        run: |
+          if [ "$SCHOOL_LOGIN_METHOD" = "parent_portal" ]; then
+            node focus-parent-monitor.mjs 2>grade-stderr.txt
+          else
+            node school-monitor.mjs 2>grade-stderr.txt
+          fi
 
       - name: Print safe Focus diagnostics
-        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'failure'
+        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'failure'
         working-directory: /tmp/parent-school-run
         run: |
           echo "--- SAFE FOCUS AUTH DIAGNOSTICS ---"
@@ -69,36 +75,36 @@ jobs:
           echo "--- END SAFE FOCUS AUTH DIAGNOSTICS ---"
 
       - name: Classify Microsoft auth failure
-        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'failure'
+        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'failure'
         working-directory: /tmp/parent-school-run
         continue-on-error: true
         run: node focus-auth-probe.mjs
 
       - name: Probe Clever Focus fallback
-        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'failure'
+        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'failure'
         working-directory: /tmp/parent-school-run
         continue-on-error: true
         run: node focus-clever-probe.mjs
 
       - name: Save previous Canvas assignments
-        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success'
+        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'success'
         working-directory: /tmp/parent-school-run
         run: node canvas-guard.mjs before
 
       - name: Run Canvas assignments
-        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success'
+        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'success'
         id: canvas
         working-directory: /tmp/parent-school-run
         continue-on-error: true
         run: node canvas-only.mjs
 
       - name: Confirm empty Canvas result
-        if: env.NO_PARENT_JOB != 'true' && steps.canvas.outcome == 'success'
+        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.canvas.outcome == 'success'
         working-directory: /tmp/parent-school-run
         run: node canvas-guard.mjs after
 
       - name: Run Focus activity
-        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success'
+        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'success'
         id: news
         working-directory: /tmp/parent-school-run
         continue-on-error: true
@@ -110,21 +116,25 @@ jobs:
           done
           exit 1
 
-      - name: Sanitize dashboard data
-        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success' && steps.news.outcome == 'success'
+      - name: Sanitize student-login dashboard data
+        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success' && steps.news.outcome == 'success'
         working-directory: /tmp/parent-school-run
         run: node sanitize-dashboard.mjs
 
-      - name: Publish private dashboard
-        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success' && steps.news.outcome == 'success'
+      - name: Publish student-login dashboard
+        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success' && steps.news.outcome == 'success'
+        run: node parent-worker-client.mjs publish
+
+      - name: Publish Parent Portal dashboard
+        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD == 'parent_portal' && steps.grades.outcome == 'success'
         run: node parent-worker-client.mjs publish
 
       - name: Record failed private run
-        if: always() && env.NO_PARENT_JOB != 'true' && (steps.grades.outcome == 'failure' || steps.canvas.outcome == 'failure' || steps.news.outcome == 'failure')
+        if: always() && env.NO_PARENT_JOB != 'true' && (steps.grades.outcome == 'failure' || (env.SCHOOL_LOGIN_METHOD != 'parent_portal' && (steps.canvas.outcome == 'failure' || steps.news.outcome == 'failure')))
         env:
-          WORKER_ERROR: grades=${{ steps.grades.outcome }}; canvas=${{ steps.canvas.outcome }}; news=${{ steps.news.outcome }}
+          WORKER_ERROR: method=${{ env.SCHOOL_LOGIN_METHOD }}; grades=${{ steps.grades.outcome }}; canvas=${{ steps.canvas.outcome }}; news=${{ steps.news.outcome }}
         run: node parent-worker-client.mjs fail
 
       - name: Mark collector failure
-        if: env.NO_PARENT_JOB != 'true' && (steps.grades.outcome == 'failure' || steps.canvas.outcome == 'failure' || steps.news.outcome == 'failure')
+        if: env.NO_PARENT_JOB != 'true' && (steps.grades.outcome == 'failure' || (env.SCHOOL_LOGIN_METHOD != 'parent_portal' && (steps.canvas.outcome == 'failure' || steps.news.outcome == 'failure')))
         run: exit 1
