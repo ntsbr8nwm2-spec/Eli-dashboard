@@ -1,6 +1,6 @@
 {
   "dateLabel": "Sat, Aug 29",
-  "updatedAt": "2026-08-30T02:54:00.357Z",
+  "updatedAt": "2026-08-30T02:58:29.021Z",
   "gradeStatus": "Current grades",
   "grades": [
     {
@@ -70,19 +70,7 @@
     {
       "day": "MON AUG 31",
       "time": "11:59 PM",
-      "course": "Canvas",
-      "title": "4. Chemistry of the Properties of Water Video Part 2..."
-    },
-    {
-      "day": "MON AUG 31",
-      "time": "11:59 PM",
       "course": "Digital Bus",
-      "title": "Review Questions for \"Tips for Shooting Better Video with..."
-    },
-    {
-      "day": "MON AUG 31",
-      "time": "11:59 PM",
-      "course": "Canvas",
       "title": "Review Questions for \"Tips for Shooting Better Video with..."
     }
   ],
