@@ -46,6 +46,11 @@ async function canvasIdentityAndActivity(page){
   try{
     return await page.evaluate(async()=>{
       const clean=v=>String(v||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
+      const norm=v=>clean(v)
+        .toLowerCase()
+        .replace(/^(?:assignment|quiz|discussion|graded|grade changed|score changed|submission|new grade)\s*[:\-–—,]?\s*/i,"")
+        .replace(/[^a-z0-9]+/g," ")
+        .trim();
       const get=async url=>{
         try{
           const r=await fetch(url,{credentials:"same-origin",headers:{"Accept":"application/json"}});
@@ -58,27 +63,102 @@ async function canvasIdentityAndActivity(page){
         get("/api/v1/users/self/activity_stream?per_page=25"),
         get("/api/v1/courses?enrollment_state=active&per_page=100")
       ]);
+
+      const activeCourses=Array.isArray(courses)?courses.filter(c=>c?.id!=null):[];
       const courseMap={};
-      if(Array.isArray(courses)){
-        for(const c of courses){
-          const label=clean(c?.name||c?.course_code||"");
-          if(c?.id!=null&&label)courseMap[String(c.id)]=label;
-        }
+      for(const c of activeCourses){
+        const label=clean(c?.name||c?.course_code||"");
+        if(label)courseMap[String(c.id)]=label;
       }
+
       const name=clean(profile?.short_name||profile?.name||profile?.sortable_name||"");
       const firstName=clean(name.split(/\s+/)[0]||"").replace(/[^A-Za-zÀ-ÖØ-öø-ÿ'’-]/g,"").slice(0,40);
+
+      const assignmentGroups=await Promise.all(activeCourses.slice(0,20).map(async c=>{
+        const list=await get(`/api/v1/courses/${encodeURIComponent(c.id)}/assignments?include[]=submission&per_page=100`);
+        return {courseId:String(c.id),assignments:Array.isArray(list)?list:[]};
+      }));
+
+      const byId={};
+      const byCourse={};
+      const fmt=n=>Number.isInteger(n)?String(n):String(Math.round(n*100)/100);
+      const pct=n=>Number.isInteger(n)?String(n):String(Math.round(n*10)/10);
+
+      for(const group of assignmentGroups){
+        byCourse[group.courseId]=[];
+        for(const a of group.assignments){
+          if(!a?.id)continue;
+          const assignmentName=clean(a.name||"");
+          const normalizedName=norm(assignmentName);
+          const sub=a.submission||{};
+          const gradeParts=[];
+          if(sub.excused){
+            gradeParts.push("Excused");
+          }else{
+            const score=Number(sub.score);
+            const possible=Number(a.points_possible);
+            if(Number.isFinite(score)&&Number.isFinite(possible)&&possible>0){
+              gradeParts.push(`${fmt(score)}/${fmt(possible)}`);
+              gradeParts.push(`${pct((score/possible)*100)}%`);
+            }else if(Number.isFinite(score)){
+              gradeParts.push(`${fmt(score)} pts`);
+            }
+            const grade=clean(sub.grade||sub.entered_grade||"");
+            if(grade){
+              const compact=grade.toLowerCase().replace(/\s+/g,"");
+              const already=gradeParts.some(x=>x.toLowerCase().replace(/\s+/g,"")===compact);
+              if(!already)gradeParts.push(grade);
+            }
+          }
+          const info={
+            id:String(a.id),
+            name:assignmentName,
+            normalizedName,
+            gradeText:gradeParts.join(" · ")
+          };
+          byId[`${group.courseId}:${a.id}`]=info;
+          byCourse[group.courseId].push(info);
+        }
+      }
+
       const activity=[];
       if(Array.isArray(stream)){
         for(const item of stream){
-          const title=clean(item?.title||item?.message||item?.notification_category||item?.type||"");
-          if(!title)continue;
-          const course=clean(courseMap[String(item?.course_id??"")]||item?.context_name||"");
+          const rawTitle=clean(item?.title||item?.message||item?.notification_category||item?.type||"");
+          if(!rawTitle)continue;
+          const courseId=String(item?.course_id??"");
+          const course=clean(courseMap[courseId]||item?.context_name||"");
+          let assignmentId="";
+          for(const candidate of [item?.assignment_id,item?.asset_id]){
+            if(candidate!=null&&/^\d+$/.test(String(candidate))){assignmentId=String(candidate);break;}
+          }
+          if(!assignmentId&&item?.html_url){
+            try{
+              const u=new URL(item.html_url,location.origin);
+              const m=u.pathname.match(/\/assignments\/(\d+)/i);
+              if(m)assignmentId=m[1];
+            }catch{}
+          }
+
+          let info=assignmentId?byId[`${courseId}:${assignmentId}`]:null;
+          if(!info){
+            const wanted=norm(rawTitle);
+            const candidates=byCourse[courseId]||[];
+            info=candidates.find(x=>x.normalizedName&&(
+              x.normalizedName===wanted ||
+              (x.normalizedName.length>=6&&wanted.includes(x.normalizedName)) ||
+              (wanted.length>=6&&x.normalizedName.includes(wanted))
+            ))||null;
+          }
+
+          const displayTitle=info?.name||rawTitle;
           let when="";
           if(item?.created_at){
             const d=new Date(item.created_at);
-            if(!Number.isNaN(d.getTime())) when=d.toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+            if(!Number.isNaN(d.getTime()))when=d.toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
           }
-          const line=[course,title,when].filter(Boolean).join(" — ");
+          const core=[course,displayTitle].filter(Boolean).join(" — ");
+          const line=[core,info?.gradeText||"",when].filter(Boolean).join(" · ");
           if(line&&!activity.includes(line))activity.push(line);
           if(activity.length>=15)break;
         }
@@ -126,9 +206,9 @@ try{
   if(!data)throw new Error("data.json could not be read.");
   data.assignments=assignments;
   if(canvasMeta.firstName)data.studentName=canvasMeta.firstName;
-  if((!Array.isArray(data.activity)||!data.activity.length)&&canvasMeta.activity.length){
+  if(canvasMeta.activity.length){
     data.activity=canvasMeta.activity;
-    data.activityStatus="Recent Canvas activity";
+    data.activityStatus="Recent Canvas activity with grades";
   }
   data.updatedAt=new Date().toISOString();
   await fs.writeFile(DATA_PATH,JSON.stringify(data,null,2)+"\n","utf8");
