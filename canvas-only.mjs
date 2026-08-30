@@ -58,6 +58,23 @@ async function canvasIdentityAndActivity(page){
           return await r.json();
         }catch{return null;}
       };
+      const eventLabel=item=>{
+        const type=clean(item?.type||"");
+        const category=clean(item?.notification_category||"");
+        const lowType=type.toLowerCase();
+        const lowCategory=category.toLowerCase();
+        if(lowCategory.includes("grading")||lowCategory.includes("grade"))return "Grading";
+        if(lowCategory.includes("due"))return "Due date activity";
+        if(lowType.includes("submission"))return "Submission";
+        if(lowType.includes("announcement"))return "Announcement";
+        if(lowType.includes("discussion"))return "Discussion";
+        if(lowType.includes("conversation")||lowType.includes("message"))return "Message";
+        if(lowType.includes("assignment"))return "Assignment activity";
+        if(lowType.includes("quiz"))return "Quiz activity";
+        if(category)return category;
+        if(type)return type;
+        return "Canvas activity";
+      };
       const [profile,stream,courses]=await Promise.all([
         get("/api/v1/users/self/profile"),
         get("/api/v1/users/self/activity_stream?per_page=25"),
@@ -153,13 +170,15 @@ async function canvasIdentityAndActivity(page){
           }
 
           const displayTitle=info?.name||rawTitle;
+          const event=eventLabel(item);
           let when="";
           if(item?.created_at){
             const d=new Date(item.created_at);
             if(!Number.isNaN(d.getTime()))when=d.toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
           }
           const core=[course,displayTitle].filter(Boolean).join(" — ");
-          const line=[core,info?.gradeText||"",when].filter(Boolean).join(" · ");
+          const currentGrade=info?.gradeText?`Current grade: ${info.gradeText}`:"";
+          const line=[core,event,currentGrade,when].filter(Boolean).join(" · ");
           if(line&&!activity.includes(line))activity.push(line);
           if(activity.length>=15)break;
         }
@@ -197,19 +216,25 @@ try{
     upcoming.push({...x,key:k});
   }
   upcoming.sort((a,b)=>a.key.localeCompare(b.key)||String(a.time).localeCompare(String(b.time)));
+  const seenAssignments=new Set();
   const assignments=upcoming.map(x=>({
     day:dayLabel(x.key),
     time:String(x.time||"").trim().replace(/(\d)(am|pm)$/i,"$1 $2").toUpperCase(),
     course:cleanCourse(x.course),
     title:x.title
-  }));
+  })).filter(x=>{
+    const key=[x.day,x.time,x.course,x.title].map(v=>String(v||"").trim().toLowerCase()).join("|");
+    if(seenAssignments.has(key))return false;
+    seenAssignments.add(key);
+    return true;
+  });
   const data=await readJSON(DATA_PATH,null);
   if(!data)throw new Error("data.json could not be read.");
   data.assignments=assignments;
   if(canvasMeta.firstName)data.studentName=canvasMeta.firstName;
   if(canvasMeta.activity.length){
     data.activity=canvasMeta.activity;
-    data.activityStatus="Recent Canvas activity with grades";
+    data.activityStatus="Recent Canvas activity with event type and current grades";
   }
   data.updatedAt=new Date().toISOString();
   await fs.writeFile(DATA_PATH,JSON.stringify(data,null,2)+"\n","utf8");
