@@ -45,10 +45,6 @@ function scrub(value){
   return text.replace(/\s+/g,' ').trim().slice(0,320);
 }
 
-async function readJson(path,fallback={}){
-  try{return JSON.parse(await fs.readFile(path,'utf8'))}catch{return fallback}
-}
-
 async function seedPilot(){
   const username=process.env.PILOT_BCPS_USERNAME||'';
   const password=process.env.PILOT_BCPS_PASSWORD||'';
@@ -57,27 +53,6 @@ async function seedPilot(){
   console.log(`::add-mask::${password}`);
   await callWorker({action:'seed-pilot',username,password});
   console.log('[PARENT] Pilot school login securely restored to Supabase.');
-}
-
-async function migrateLegacy(){
-  const username=process.env.BCPS_USERNAME||'';
-  const password=process.env.BCPS_PASSWORD||'';
-  if(!username||!password) throw new Error('Legacy school credentials are unavailable.');
-  console.log(`::add-mask::${username}`);
-  console.log(`::add-mask::${password}`);
-  const data=await readJson('data.json',{});
-  const news=await readJson('news-state.json',{});
-  const canvas=await readJson('canvas-state.json',{});
-  await callWorker({
-    action:'migrate-legacy',
-    legacy_key:'eli-original',
-    username,
-    password,
-    data,
-    news_state:news,
-    canvas_state:canvas
-  });
-  console.log('[PARENT] Original Eli connection migrated into the private multi-student system.');
 }
 
 async function lease(){
@@ -137,8 +112,7 @@ async function fail(){
 }
 
 if(MODE==='seed-pilot') await seedPilot();
-else if(MODE==='migrate-legacy') await migrateLegacy();
 else if(MODE==='lease') await lease();
 else if(MODE==='publish') await publish();
 else if(MODE==='fail') await fail();
-else throw new Error('Use seed-pilot, migrate-legacy, lease, publish, or fail.');
+else throw new Error('Use seed-pilot, lease, publish, or fail.');
