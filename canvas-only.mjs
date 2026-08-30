@@ -95,12 +95,13 @@ async function canvasIdentityAndActivity(page){
           if(sub.excused){
             gradeParts.push("Excused");
           }else{
-            const score=Number(sub.score);
+            const hasScore=sub.score!==null&&sub.score!==undefined&&sub.score!=="";
+            const score=hasScore?Number(sub.score):NaN;
             const possible=Number(a.points_possible);
-            if(Number.isFinite(score)&&Number.isFinite(possible)&&possible>0){
+            if(hasScore&&Number.isFinite(score)&&Number.isFinite(possible)&&possible>0){
               gradeParts.push(`${fmt(score)}/${fmt(possible)}`);
               gradeParts.push(`${pct((score/possible)*100)}%`);
-            }else if(Number.isFinite(score)){
+            }else if(hasScore&&Number.isFinite(score)){
               gradeParts.push(`${fmt(score)} pts`);
             }
             const grade=clean(sub.grade||sub.entered_grade||"");
