@@ -1,0 +1,33 @@
+name: Keep scheduled worker active
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 9 1 * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repository-keepalive
+  cancel-in-progress: false
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record monthly activity
+        run: |
+          mkdir -p .github
+          date -u +'%Y-%m-%dT%H:%M:%SZ' > .github/keepalive.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/keepalive.txt
+          if git diff --cached --quiet; then
+            echo 'No keepalive change'
+            exit 0
+          fi
+          git commit -m 'Keep scheduled dashboard worker active'
+          git pull --rebase origin main
+          git push origin HEAD:main
