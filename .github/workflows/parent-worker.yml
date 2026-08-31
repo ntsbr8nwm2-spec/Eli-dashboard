@@ -9,11 +9,10 @@ on:
       - 'parent-worker-client.mjs'
       - 'school-monitor.mjs'
       - 'canvas-only.mjs'
+      - 'canvas-guard.mjs'
       - 'focus-news-v2.mjs'
       - 'sanitize-dashboard.mjs'
       - 'focus-parent-monitor.mjs'
-      - 'focus-auth-probe.mjs'
-      - 'focus-clever-probe.mjs'
       - '.github/workflows/parent-worker.yml'
 
 permissions:
@@ -47,7 +46,7 @@ jobs:
       - name: Prepare isolated student workspace
         if: env.NO_PARENT_JOB != 'true'
         run: |
-          cp school-monitor.mjs focus-parent-monitor.mjs canvas-only.mjs canvas-guard.mjs focus-news-v2.mjs sanitize-dashboard.mjs focus-auth-probe.mjs focus-clever-probe.mjs "$PARENT_WORKDIR"/
+          cp school-monitor.mjs focus-parent-monitor.mjs canvas-only.mjs canvas-guard.mjs focus-news-v2.mjs sanitize-dashboard.mjs "$PARENT_WORKDIR"/
           chmod 700 "$PARENT_WORKDIR"
           chmod 600 "$PARENT_WORKDIR"/*.json || true
 
@@ -76,18 +75,6 @@ jobs:
           echo "--- SAFE FOCUS AUTH DIAGNOSTICS ---"
           if [ -f auth-debug.json ]; then cat auth-debug.json; else echo "No auth-debug.json was produced."; fi
           echo "--- END SAFE FOCUS AUTH DIAGNOSTICS ---"
-
-      - name: Classify Microsoft auth failure
-        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'failure'
-        working-directory: /tmp/parent-school-run
-        continue-on-error: true
-        run: node focus-auth-probe.mjs
-
-      - name: Probe Clever Focus fallback
-        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'failure'
-        working-directory: /tmp/parent-school-run
-        continue-on-error: true
-        run: node focus-clever-probe.mjs
 
       - name: Save previous Canvas assignments
         if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'success'
