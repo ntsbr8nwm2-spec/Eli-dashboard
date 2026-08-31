@@ -20,12 +20,24 @@ async function oidcToken(){
 }
 
 async function callWorker(body){
-  const token=await oidcToken();
-  const r=await fetch(WORKER_URL,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
-  const text=await r.text();
-  let data={}; try{data=JSON.parse(text)}catch{}
-  if(!r.ok) throw new Error(data.error||`Worker backend failed (${r.status})`);
-  return data;
+  let lastError;
+  for(let attempt=1;attempt<=2;attempt++){
+    try{
+      const token=await oidcToken();
+      const r=await fetch(WORKER_URL,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const text=await r.text();
+      let data={}; try{data=JSON.parse(text)}catch{}
+      if(r.ok) return data;
+      const err=new Error(data.error||`Worker backend failed (${r.status})`);
+      err.status=r.status;
+      throw err;
+    }catch(e){
+      lastError=e;
+      if(attempt===2 || ![401,502,503,504].includes(Number(e?.status||0))) break;
+      await new Promise(r=>setTimeout(r,700));
+    }
+  }
+  throw lastError;
 }
 
 async function appendEnv(name,value){
@@ -53,7 +65,6 @@ async function lease(){
     console.log('[PARENT] No connected student is waiting for a run.');
     return;
   }
-
   console.log(`::add-mask::${job.school_username}`);
   console.log(`::add-mask::${job.school_password}`);
   await appendEnv('NO_PARENT_JOB','false');
@@ -62,7 +73,6 @@ async function lease(){
   await appendEnv('BCPS_USERNAME',job.school_username);
   await appendEnv('BCPS_PASSWORD',job.school_password);
   await appendEnv('SCHOOL_LOGIN_METHOD',job.login_method||'student_sso');
-
   const initial={dateLabel:'Latest school update',updatedAt:new Date().toISOString(),gradeStatus:'Current grades',grades:[],assignments:[],activityStatus:'Nothing new',activity:[]};
   const data=job.dashboard_data&&Object.keys(job.dashboard_data).length?job.dashboard_data:initial;
   await fs.writeFile(`${WORKDIR}/data.json`,JSON.stringify(data,null,2)+'\n');
@@ -95,6 +105,12 @@ async function fail(){
     if(auth?.error) error+=`; auth=${scrub(auth.error)}`;
     const last=Array.isArray(auth?.trace)?auth.trace.at(-1):null;
     if(last?.page?.host) error+=`; page=${scrub(`${last.page.host}${last.page.path||''}`)}`;
+  }catch{}
+  try{
+    const parent=JSON.parse(await fs.readFile(`${WORKDIR}/parent-focus-debug.json`,'utf8'));
+    if(parent?.error) error+=`; parent=${scrub(parent.error)}`;
+    if(parent?.page?.host) error+=`; page=${scrub(`${parent.page.host}${parent.page.path||''}`)}`;
+    if(parent?.diag?.host) error+=`; page=${scrub(`${parent.diag.host}${parent.diag.path||''}`)}`;
   }catch{}
   error=scrub(error).slice(0,500);
   await callWorker({action:'fail',student_id:studentId,error});
