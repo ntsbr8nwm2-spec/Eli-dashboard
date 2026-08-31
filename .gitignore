@@ -1,0 +1,25 @@
+# Local/runtime secrets
+.env
+.env.*
+!.env.example
+node_modules/
+*.log
+
+# Auth/session/debug artifacts
+*-debug.json
+auth-debug.json
+canvas-debug.json
+news-debug.json
+storage-state*.json
+*.storage-state.json
+
+# Student dashboard runtime data belongs in Supabase, never GitHub
+data.json
+news-state.json
+canvas-state.json
+school-state.json
+students/**/data.json
+students/**/news-state.json
+students/**/canvas-state.json
+students/**/school-state.json
+students/**/profile.json
