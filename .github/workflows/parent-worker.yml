@@ -12,7 +12,6 @@ on:
       - 'canvas-guard.mjs'
       - 'focus-news-v2.mjs'
       - 'sanitize-dashboard.mjs'
-      - 'focus-parent-monitor.mjs'
       - '.github/workflows/parent-worker.yml'
 
 permissions:
@@ -46,7 +45,7 @@ jobs:
       - name: Prepare isolated student workspace
         if: env.NO_PARENT_JOB != 'true'
         run: |
-          cp school-monitor.mjs focus-parent-monitor.mjs canvas-only.mjs canvas-guard.mjs focus-news-v2.mjs sanitize-dashboard.mjs "$PARENT_WORKDIR"/
+          cp school-monitor.mjs canvas-only.mjs canvas-guard.mjs focus-news-v2.mjs sanitize-dashboard.mjs "$PARENT_WORKDIR"/
           chmod 700 "$PARENT_WORKDIR"
           chmod 600 "$PARENT_WORKDIR"/*.json || true
 
@@ -56,20 +55,15 @@ jobs:
           npm install --prefix "$PARENT_WORKDIR" --no-save playwright@1.55.0
           "$PARENT_WORKDIR/node_modules/.bin/playwright" install --with-deps chromium
 
-      - name: Run Focus grades
+      - name: Run Focus grades through student BCPS login
         if: env.NO_PARENT_JOB != 'true'
         id: grades
         working-directory: /tmp/parent-school-run
         continue-on-error: true
-        run: |
-          if [ "$SCHOOL_LOGIN_METHOD" = "parent_portal" ]; then
-            node focus-parent-monitor.mjs 2>grade-stderr.txt
-          else
-            node school-monitor.mjs 2>grade-stderr.txt
-          fi
+        run: node school-monitor.mjs 2>grade-stderr.txt
 
       - name: Print safe Focus diagnostics
-        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'failure'
+        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'failure'
         working-directory: /tmp/parent-school-run
         run: |
           echo "--- SAFE FOCUS AUTH DIAGNOSTICS ---"
@@ -77,52 +71,48 @@ jobs:
           echo "--- END SAFE FOCUS AUTH DIAGNOSTICS ---"
 
       - name: Save previous Canvas assignments
-        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'success'
+        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success'
         working-directory: /tmp/parent-school-run
         run: node canvas-guard.mjs before
 
       - name: Run Canvas assignments
-        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'success'
+        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success'
         id: canvas
         working-directory: /tmp/parent-school-run
         continue-on-error: true
         run: node canvas-only.mjs
 
       - name: Confirm empty Canvas result
-        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.canvas.outcome == 'success'
+        if: env.NO_PARENT_JOB != 'true' && steps.canvas.outcome == 'success'
         working-directory: /tmp/parent-school-run
         run: node canvas-guard.mjs after
 
       - name: Sanitize base dashboard data
-        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success'
+        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success'
         working-directory: /tmp/parent-school-run
         run: node sanitize-dashboard.mjs
 
       - name: Publish grades Canvas and fallback activity
-        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success'
+        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success'
         run: node parent-worker-client.mjs publish
 
       - name: Run Focus activity
-        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success'
+        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success'
         id: news
         working-directory: /tmp/parent-school-run
         continue-on-error: true
         run: node focus-news-v2.mjs
 
       - name: Publish richer Focus activity
-        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.news.outcome == 'success'
-        run: node parent-worker-client.mjs publish
-
-      - name: Publish Parent Portal dashboard
-        if: env.NO_PARENT_JOB != 'true' && env.SCHOOL_LOGIN_METHOD == 'parent_portal' && steps.grades.outcome == 'success'
+        if: env.NO_PARENT_JOB != 'true' && steps.news.outcome == 'success'
         run: node parent-worker-client.mjs publish
 
       - name: Record failed private run
-        if: always() && env.NO_PARENT_JOB != 'true' && (steps.grades.outcome == 'failure' || (env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.canvas.outcome == 'failure'))
+        if: always() && env.NO_PARENT_JOB != 'true' && (steps.grades.outcome == 'failure' || steps.canvas.outcome == 'failure')
         env:
-          WORKER_ERROR: method=${{ env.SCHOOL_LOGIN_METHOD }}; grades=${{ steps.grades.outcome }}; canvas=${{ steps.canvas.outcome }}; news=${{ steps.news.outcome }}
+          WORKER_ERROR: method=student_sso; grades=${{ steps.grades.outcome }}; canvas=${{ steps.canvas.outcome }}; news=${{ steps.news.outcome }}
         run: node parent-worker-client.mjs fail
 
       - name: Mark collector failure
-        if: env.NO_PARENT_JOB != 'true' && (steps.grades.outcome == 'failure' || (env.SCHOOL_LOGIN_METHOD != 'parent_portal' && steps.canvas.outcome == 'failure'))
+        if: env.NO_PARENT_JOB != 'true' && (steps.grades.outcome == 'failure' || steps.canvas.outcome == 'failure')
         run: exit 1
