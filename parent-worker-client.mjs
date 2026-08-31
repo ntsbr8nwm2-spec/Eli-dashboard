@@ -45,16 +45,6 @@ function scrub(value){
   return text.replace(/\s+/g,' ').trim().slice(0,320);
 }
 
-async function seedPilot(){
-  const username=process.env.PILOT_BCPS_USERNAME||'';
-  const password=process.env.PILOT_BCPS_PASSWORD||'';
-  if(!username||!password) throw new Error('Pilot restore credentials are unavailable.');
-  console.log(`::add-mask::${username}`);
-  console.log(`::add-mask::${password}`);
-  await callWorker({action:'seed-pilot',username,password});
-  console.log('[PARENT] Pilot school login securely restored to Supabase.');
-}
-
 async function lease(){
   const {job}=await callWorker({action:'lease'});
   await fs.mkdir(WORKDIR,{recursive:true});
@@ -111,8 +101,7 @@ async function fail(){
   console.log('[PARENT] Worker failure recorded without exposing school credentials.');
 }
 
-if(MODE==='seed-pilot') await seedPilot();
-else if(MODE==='lease') await lease();
+if(MODE==='lease') await lease();
 else if(MODE==='publish') await publish();
 else if(MODE==='fail') await fail();
-else throw new Error('Use seed-pilot, lease, publish, or fail.');
+else throw new Error('Use lease, publish, or fail.');
