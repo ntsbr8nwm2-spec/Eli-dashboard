@@ -72,13 +72,12 @@ async function lease(){
   await appendEnv('STUDENT_FIRST_NAME',job.first_name||'Student');
   await appendEnv('BCPS_USERNAME',job.school_username);
   await appendEnv('BCPS_PASSWORD',job.school_password);
-  await appendEnv('SCHOOL_LOGIN_METHOD',job.login_method||'student_sso');
   const initial={dateLabel:'Latest school update',updatedAt:new Date().toISOString(),gradeStatus:'Current grades',grades:[],assignments:[],activityStatus:'Nothing new',activity:[]};
   const data=job.dashboard_data&&Object.keys(job.dashboard_data).length?job.dashboard_data:initial;
   await fs.writeFile(`${WORKDIR}/data.json`,JSON.stringify(data,null,2)+'\n');
   await fs.writeFile(`${WORKDIR}/news-state.json`,JSON.stringify(job.news_state||{},null,2)+'\n');
   await fs.writeFile(`${WORKDIR}/canvas-state.json`,JSON.stringify(job.canvas_state||{},null,2)+'\n');
-  console.log(`[PARENT] Leased dashboard job for ${job.first_name||'student'} using ${job.login_method||'student_sso'}.`);
+  console.log(`[PARENT] Leased student BCPS dashboard job for ${job.first_name||'student'}.`);
 }
 
 async function publish(){
@@ -105,12 +104,6 @@ async function fail(){
     if(auth?.error) error+=`; auth=${scrub(auth.error)}`;
     const last=Array.isArray(auth?.trace)?auth.trace.at(-1):null;
     if(last?.page?.host) error+=`; page=${scrub(`${last.page.host}${last.page.path||''}`)}`;
-  }catch{}
-  try{
-    const parent=JSON.parse(await fs.readFile(`${WORKDIR}/parent-focus-debug.json`,'utf8'));
-    if(parent?.error) error+=`; parent=${scrub(parent.error)}`;
-    if(parent?.page?.host) error+=`; page=${scrub(`${parent.page.host}${parent.page.path||''}`)}`;
-    if(parent?.diag?.host) error+=`; page=${scrub(`${parent.diag.host}${parent.diag.path||''}`)}`;
   }catch{}
   error=scrub(error).slice(0,500);
   await callWorker({action:'fail',student_id:studentId,error});
