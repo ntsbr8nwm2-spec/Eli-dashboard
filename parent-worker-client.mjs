@@ -59,6 +59,23 @@ function scrub(value){
 
 function classifySafeAuthTrace(auth){
   const trace=Array.isArray(auth?.trace)?auth.trace:[];
+  const allowedIssues=new Set([
+    'invalid_password',
+    'invalid_username',
+    'password_expired',
+    'account_locked',
+    'verification_required',
+    'sign_in_blocked'
+  ]);
+  for(const shot of trace){
+    if(!Array.isArray(shot?.frames)) continue;
+    for(const frame of shot.frames){
+      const issue=String(frame?.authIssue||'');
+      if(frame?.host==='login.microsoftonline.com' && allowedIssues.has(issue)){
+        return `method=student_sso; authentication=failure; reason=${issue}`;
+      }
+    }
+  }
   const sawMicrosoftPassword=trace.some(shot=>
     shot?.page?.host==='login.microsoftonline.com' &&
     Array.isArray(shot?.frames) &&
