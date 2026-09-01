@@ -245,6 +245,21 @@ async function inspectFrame(frame, schoolYear) {
       const lower = text.toLowerCase();
       const rows = [...document.querySelectorAll("tr")];
       const gradePattern = /^(?:NG|[0-9]{1,3}%\s*[A-F][+-]?|[A-F][+-]?)$/i;
+      let authIssue = null;
+
+      if (/(account or password is incorrect|password is incorrect|incorrect password|wrong password|password you entered is incorrect)/i.test(lower)) {
+        authIssue = "invalid_password";
+      } else if (/(couldn['’]?t find an account|could not find an account|account doesn['’]?t exist|account does not exist|username may be incorrect|enter a valid email address, phone number, or skype name)/i.test(lower)) {
+        authIssue = "invalid_username";
+      } else if (/(password has expired|password expired|change your password|update your password)/i.test(lower)) {
+        authIssue = "password_expired";
+      } else if (/(account has been locked|account is locked|temporarily locked|too many unsuccessful sign-in attempts|too many failed sign-in attempts)/i.test(lower)) {
+        authIssue = "account_locked";
+      } else if (/(approve sign[- ]?in request|enter (the )?code|verify your identity|two-step verification|authenticator app|use your phone to sign in|more information required|additional security verification)/i.test(lower)) {
+        authIssue = "verification_required";
+      } else if (/(sign[- ]?in is blocked|you can['’]?t sign in|you cannot sign in|account has been blocked)/i.test(lower)) {
+        authIssue = "sign_in_blocked";
+      }
 
       const shapes = rows
         .map(tr => [...tr.querySelectorAll("th,td")].map(cell => String(cell.innerText || "").trim()))
@@ -288,11 +303,13 @@ async function inspectFrame(frame, schoolYear) {
         logoutText: text.includes("Log Out"),
         samlRequest: Boolean(document.querySelector('input[name="SAMLRequest"]')),
         samlResponse: Boolean(document.querySelector('input[name="SAMLResponse"]')),
+        authIssue,
         rowShapes: shapes,
         forms
       };
     }, schoolYear);
 
+    if (url.host !== "login.microsoftonline.com") details.authIssue = null;
     return { ...url, ...details };
   } catch (error) {
     return { ...url, inspectError: String(error).slice(0, 180) };
