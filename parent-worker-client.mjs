@@ -57,6 +57,27 @@ function scrub(value){
   return text.replace(/\s+/g,' ').trim().slice(0,320);
 }
 
+function classifySafeAuthTrace(auth){
+  const trace=Array.isArray(auth?.trace)?auth.trace:[];
+  const sawMicrosoftPassword=trace.some(shot=>
+    shot?.page?.host==='login.microsoftonline.com' &&
+    Array.isArray(shot?.frames) &&
+    shot.frames.some(frame=>
+      Array.isArray(frame?.forms) &&
+      frame.forms.some(form=>Array.isArray(form?.inputNames)&&form.inputNames.includes('passwd'))
+    )
+  );
+  const returnedToFocusLogin=trace.some(shot=>
+    ['final-reload-failed','error-final'].includes(String(shot?.stage||'')) &&
+    Array.isArray(shot?.frames) &&
+    shot.frames.some(frame=>frame?.focusLogin===true)
+  );
+  if(sawMicrosoftPassword&&returnedToFocusLogin){
+    return 'method=student_sso; authentication=failure; reason=microsoft_sign_in_did_not_complete';
+  }
+  return '';
+}
+
 async function lease(){
   const {job}=await callWorker({action:'lease'});
   await fs.mkdir(WORKDIR,{recursive:true});
@@ -95,19 +116,27 @@ async function fail(){
   const studentId=process.env.STUDENT_ID;
   if(!studentId) return;
   let error=String(process.env.WORKER_ERROR||'School monitor failed');
-  try{
-    const stderr=await fs.readFile(`${WORKDIR}/grade-stderr.txt`,'utf8');
-    if(stderr.trim()) error+=`; stderr=${scrub(stderr)}`;
-  }catch{}
+  let authClassification='';
   try{
     const auth=JSON.parse(await fs.readFile(`${WORKDIR}/auth-debug.json`,'utf8'));
-    if(auth?.error) error+=`; auth=${scrub(auth.error)}`;
-    const last=Array.isArray(auth?.trace)?auth.trace.at(-1):null;
-    if(last?.page?.host) error+=`; page=${scrub(`${last.page.host}${last.page.path||''}`)}`;
+    authClassification=classifySafeAuthTrace(auth);
+    if(authClassification){
+      error=authClassification;
+    }else{
+      if(auth?.error) error+=`; auth=${scrub(auth.error)}`;
+      const last=Array.isArray(auth?.trace)?auth.trace.at(-1):null;
+      if(last?.page?.host) error+=`; page=${scrub(`${last.page.host}${last.page.path||''}`)}`;
+    }
   }catch{}
+  if(!authClassification){
+    try{
+      const stderr=await fs.readFile(`${WORKDIR}/grade-stderr.txt`,'utf8');
+      if(stderr.trim()) error+=`; stderr=${scrub(stderr)}`;
+    }catch{}
+  }
   error=scrub(error).slice(0,500);
   await callWorker({action:'fail',student_id:studentId,error});
-  console.log('[PARENT] Worker failure recorded without exposing school credentials.');
+  console.log(`[PARENT] Worker failure recorded${authClassification?' as student authentication failure':''} without exposing school credentials.`);
 }
 
 if(MODE==='lease') await lease();
