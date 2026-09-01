@@ -177,28 +177,10 @@ async function pageInfo(page) {
     return await page.evaluate(() => {
       const text = document.body?.innerText || "";
       const lower = text.toLowerCase();
-      const issueText = [
-        document.querySelector("#passwordError")?.textContent,
-        document.querySelector("#usernameError")?.textContent,
-        ...[...document.querySelectorAll('[role="alert"]')].slice(0, 4).map(el => el.textContent)
-      ].filter(Boolean).join(" ").toLowerCase();
-
-      let microsoftIssue = "";
-      if (/(incorrect|wrong|invalid).*(password|account)|password.*(incorrect|wrong|invalid)/i.test(issueText)) {
-        microsoftIssue = "credentials_rejected";
-      } else if (/(locked|blocked|disabled)/i.test(issueText)) {
-        microsoftIssue = "account_blocked";
-      } else if (/(expired|change your password|update your password)/i.test(issueText)) {
-        microsoftIssue = "password_action_required";
-      } else if (/(approve|verification|verify your identity|another way|authenticator|code)/i.test(issueText)) {
-        microsoftIssue = "additional_verification_required";
-      }
-
       return {
         focusLogin: lower.includes("sign in with microsoft"),
         microsoftUsername: Boolean(document.querySelector('#i0116, input[name="loginfmt"]')),
         microsoftPassword: Boolean(document.querySelector('#i0118, input[name="passwd"]')),
-        microsoftIssue,
         samlRequest: Boolean(document.querySelector('input[name="SAMLRequest"]')),
         samlResponse: Boolean(document.querySelector('input[name="SAMLResponse"]')),
         staySignedIn: lower.includes("stay signed in"),
@@ -210,7 +192,6 @@ async function pageInfo(page) {
       focusLogin: false,
       microsoftUsername: false,
       microsoftPassword: false,
-      microsoftIssue: "",
       samlRequest: false,
       samlResponse: false,
       staySignedIn: false,
@@ -220,23 +201,6 @@ async function pageInfo(page) {
 }
 
 async function openMicrosoftSSO(page) {
-  try {
-    const result = await page.evaluate(() => {
-      const target = [...document.querySelectorAll('a,button,input,[role="button"]')]
-        .find(element =>
-          String(element.innerText || element.value || element.textContent || "")
-            .toLowerCase()
-            .includes("sign in with microsoft")
-        );
-
-      if (!result.found) return false;
-      if (result.href) {
-        await gotoSafe(page, result.href);
-        return true;
-      }
-    });
-  } catch {}
-
   try {
     const result = await page.evaluate(() => {
       const target = [...document.querySelectorAll('a,button,input,[role="button"]')]
@@ -435,7 +399,6 @@ async function automaticFocusLogin(page) {
 
   let usernameDone = false;
   let passwordDone = false;
-  let passwordStillPresent = 0;
   let accountDone = false;
   let stayDone = false;
   let ssoAttempts = 0;
@@ -450,29 +413,11 @@ async function automaticFocusLogin(page) {
     if (grades.courses.length) {
       log("Authentication proven by readable grade rows.");
       await snapshot(page, "grades-readable");
-      return { success: true, grades, authFailure: false, authIssue: "" };
+      return { success: true, grades };
     }
 
     const info = await pageInfo(page);
     const location = safeURLParts(page.url());
-
-    if (passwordDone && info.microsoftPassword) {
-      passwordStillPresent++;
-      if (info.microsoftIssue || passwordStillPresent >= 2) {
-        const authIssue = info.microsoftIssue || "credentials_or_account_action_required";
-        log(`Microsoft sign-in stopped after password submission (${authIssue}).`);
-        await snapshot(page, "microsoft-auth-failed");
-        return {
-          success: false,
-          grades,
-          authFailure: true,
-          authIssue,
-          counters: { ssoAttempts, requestAttempts, responseAttempts }
-        };
-      }
-    } else if (passwordDone) {
-      passwordStillPresent = 0;
-    }
 
     if (info.focusLogin && ssoAttempts < 4) {
       ssoAttempts++;
@@ -537,7 +482,7 @@ async function automaticFocusLogin(page) {
       if (afterResponse.courses.length) {
         log("Grades became readable immediately after SAMLResponse.");
         await snapshot(page, `after-saml-response-${responseAttempts}-success`);
-        return { success: true, grades: afterResponse, authFailure: false, authIssue: "" };
+        return { success: true, grades: afterResponse };
       }
 
       await snapshot(page, `after-saml-response-${responseAttempts}`);
@@ -556,25 +501,14 @@ async function automaticFocusLogin(page) {
   }
 
   await snapshot(page, "deadline-before-final-reload");
-  const beforeReload = await pageInfo(page);
-  const beforeReloadLocation = safeURLParts(page.url());
   await gotoSafe(page, GRADES_URL);
   await sleep(1800);
   const grades = await scrapeGrades(page, false);
   await snapshot(page, grades.courses.length ? "final-reload-success" : "final-reload-failed");
-  const finalInfo = await pageInfo(page);
-
-  const authFailure = !grades.courses.length && passwordDone && (
-    beforeReload.microsoftPassword ||
-    beforeReloadLocation.host === "login.microsoftonline.com" ||
-    finalInfo.focusLogin
-  );
 
   return {
     success: grades.courses.length > 0,
     grades,
-    authFailure,
-    authIssue: authFailure ? (beforeReload.microsoftIssue || "authentication_did_not_complete") : "",
     counters: { ssoAttempts, requestAttempts, responseAttempts }
   };
 }
@@ -653,8 +587,6 @@ async function writeSafeDebug(page, error, loginResult = null) {
       at: new Date().toISOString(),
       error: String(error),
       schoolYear: currentSchoolYear(),
-      authFailure: Boolean(loginResult?.authFailure),
-      authIssue: loginResult?.authIssue || null,
       loginCounters: loginResult?.counters || null,
       trace
     };
@@ -684,10 +616,7 @@ try {
   loginResult = await automaticFocusLogin(page);
 
   if (!loginResult.success) {
-    if (loginResult.authFailure) {
-      throw new Error("BCPS/Microsoft student sign-in did not complete after the password step. Verify the student's current school login or any Microsoft account action required.");
-    }
-    throw new Error("Focus authentication completed, but no readable current-year grade rows were found.");
+    throw new Error("Focus login completed its auth flow, but no readable current-year grade rows were found.");
   }
 
   const current = loginResult.grades.courses.length
