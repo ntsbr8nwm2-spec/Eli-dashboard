@@ -1,5 +1,5 @@
 # GPA is collected with the Focus grade run.
-# Ad-hoc all-student sweep trigger 6 — 2026-09-03
+# Ad-hoc all-student sweep trigger 7 — 2026-09-03
 name: Parent dashboard worker
 
 on:
