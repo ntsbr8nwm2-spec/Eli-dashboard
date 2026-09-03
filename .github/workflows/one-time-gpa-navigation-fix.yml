@@ -1,0 +1,97 @@
+name: One-time GPA navigation fix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/one-time-gpa-navigation-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch GPA navigation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('school-monitor.mjs')
+          s=p.read_text()
+          old='''async function scrapeGpaFromCurrentDocumentTree(page) {
+  for (const frame of page.frames()) {
+    try {
+      const found = await frame.evaluate(() => {
+        const text = String(document.body?.innerText || "").replace(/\\s+/g, " ");
+        const cumulative = text.match(/\\bCumulative\\s+GPA\\s*:?\\s*(\\d+(?:\\.\\d+)?)/i);
+        const weighted = text.match(/\\bCumulative\\s+Weighted\\s+GPA\\s*:?\\s*(\\d+(?:\\.\\d+)?)/i);
+        return {
+          cumulativeGpa: cumulative ? cumulative[1] : null,
+          weightedGpa: weighted ? weighted[1] : null
+        };
+      });
+      if (found?.cumulativeGpa || found?.weightedGpa) {
+        return found;
+      }
+    } catch {}
+  }
+  return { cumulativeGpa: null, weightedGpa: null };
+}
+'''
+          new='''async function readGpaFromFrames(page) {
+  for (const frame of page.frames()) {
+    try {
+      const found = await frame.evaluate(() => {
+        const text = String(document.body?.innerText || "").replace(/\\s+/g, " ");
+        const cumulative = text.match(/\\bCumulative\\s+GPA\\s*:?\\s*(\\d+(?:\\.\\d+)?)/i)
+          || text.match(/\\bUnweighted\\s+GPA\\s*:?\\s*(\\d+(?:\\.\\d+)?)/i);
+        const weighted = text.match(/\\bCumulative\\s+Weighted\\s+GPA\\s*:?\\s*(\\d+(?:\\.\\d+)?)/i)
+          || text.match(/\\bWeighted\\s+GPA\\s*:?\\s*(\\d+(?:\\.\\d+)?)/i);
+        return {
+          cumulativeGpa: cumulative ? cumulative[1] : null,
+          weightedGpa: weighted ? weighted[1] : null
+        };
+      });
+      if (found?.cumulativeGpa || found?.weightedGpa) return found;
+    } catch {}
+  }
+  return { cumulativeGpa: null, weightedGpa: null };
+}
+
+async function scrapeGpa(page) {
+  const base = "https://browardschools.focusschoolsoftware.com/focus/Modules.php?force_package=SIS&modname=";
+  const candidates = [
+    null,
+    `${base}Grades/StudentRCGrades.php&details=true`,
+    `${base}Grades/StudentRCGrades.php`,
+    `${base}Grades/StudentGrades.php`,
+    `${base}Grades/GPARankList.php`
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate) {
+      await gotoSafe(page, candidate);
+      await sleep(1200);
+    }
+    const found = await readGpaFromFrames(page);
+    if (found.cumulativeGpa || found.weightedGpa) {
+      return { ...found, source: safeURLParts(page.url()) };
+    }
+  }
+
+  return { cumulativeGpa: null, weightedGpa: null, source: safeURLParts(page.url()) };
+}
+'''
+          if old not in s:
+              raise SystemExit('Old GPA function not found')
+          s=s.replace(old,new,1)
+          s=s.replace('const gpa = await scrapeGpaFromCurrentDocumentTree(page);','const gpa = await scrapeGpa(page);',1)
+          s=s.replace('if (gpa.cumulativeGpa) log(`GPA parsed: ${gpa.cumulativeGpa}.`);','if (gpa.cumulativeGpa) log(`GPA parsed: ${gpa.cumulativeGpa} from ${gpa.source?.path || "Focus"}.`);',1)
+          p.write_text(s)
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add school-monitor.mjs
+          git commit -m "Read GPA from Focus grade summary views"
+          git push
