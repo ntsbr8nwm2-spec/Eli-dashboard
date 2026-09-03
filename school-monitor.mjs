@@ -409,24 +409,48 @@ async function scrapeGrades(page, navigate = true) {
   return { schoolYear: currentSchoolYear(), courses: [] };
 }
 
-async function scrapeGpaFromCurrentDocumentTree(page) {
+async function readGpaFromFrames(page) {
   for (const frame of page.frames()) {
     try {
       const found = await frame.evaluate(() => {
         const text = String(document.body?.innerText || "").replace(/\s+/g, " ");
-        const cumulative = text.match(/\bCumulative\s+GPA\s*:?\s*(\d+(?:\.\d+)?)/i);
-        const weighted = text.match(/\bCumulative\s+Weighted\s+GPA\s*:?\s*(\d+(?:\.\d+)?)/i);
+        const cumulative = text.match(/\bCumulative\s+GPA\s*:?\s*(\d+(?:\.\d+)?)/i)
+          || text.match(/\bUnweighted\s+GPA\s*:?\s*(\d+(?:\.\d+)?)/i);
+        const weighted = text.match(/\bCumulative\s+Weighted\s+GPA\s*:?\s*(\d+(?:\.\d+)?)/i)
+          || text.match(/\bWeighted\s+GPA\s*:?\s*(\d+(?:\.\d+)?)/i);
         return {
           cumulativeGpa: cumulative ? cumulative[1] : null,
           weightedGpa: weighted ? weighted[1] : null
         };
       });
-      if (found?.cumulativeGpa || found?.weightedGpa) {
-        return found;
-      }
+      if (found?.cumulativeGpa || found?.weightedGpa) return found;
     } catch {}
   }
   return { cumulativeGpa: null, weightedGpa: null };
+}
+
+async function scrapeGpa(page) {
+  const base = "https://browardschools.focusschoolsoftware.com/focus/Modules.php?force_package=SIS&modname=";
+  const candidates = [
+    null,
+    `${base}Grades/StudentRCGrades.php&details=true`,
+    `${base}Grades/StudentRCGrades.php`,
+    `${base}Grades/StudentGrades.php`,
+    `${base}Grades/GPARankList.php`
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate) {
+      await gotoSafe(page, candidate);
+      await sleep(1200);
+    }
+    const found = await readGpaFromFrames(page);
+    if (found.cumulativeGpa || found.weightedGpa) {
+      return { ...found, source: safeURLParts(page.url()) };
+    }
+  }
+
+  return { cumulativeGpa: null, weightedGpa: null, source: safeURLParts(page.url()) };
 }
 
 async function automaticFocusLogin(page) {
@@ -667,8 +691,8 @@ try {
   }
 
   log(`Current-year courses parsed: ${current.courses.length}.`);
-  const gpa = await scrapeGpaFromCurrentDocumentTree(page);
-  if (gpa.cumulativeGpa) log(`GPA parsed: ${gpa.cumulativeGpa}.`);
+  const gpa = await scrapeGpa(page);
+  if (gpa.cumulativeGpa) log(`GPA parsed: ${gpa.cumulativeGpa} from ${gpa.source?.path || "Focus"}.`);
   else log("Cumulative GPA was not readable on this Focus page.");
   await writeDashboard(current, gpa);
   await fs.rm(DEBUG_PATH, { force: true }).catch(() => {});
