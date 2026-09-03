@@ -601,6 +601,8 @@ async function writeDashboard(current, gpa = {}) {
 
   const data = {
     dateLabel: dashboardDateLabel(),
+    gpa: gpa.cumulativeGpa || old.gpa || null,
+    weightedGpa: gpa.weightedGpa || old.weightedGpa || null,
     updatedAt: new Date().toISOString(),
     gradeStatus: changeCount ? `🚨 ${changeCount} change${changeCount === 1 ? "" : "s"}` : "Current grades",
     grades,
