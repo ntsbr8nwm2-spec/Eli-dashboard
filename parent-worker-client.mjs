@@ -129,20 +129,6 @@ async function publish(){
   console.log('[PARENT] Private dashboard published to Supabase.');
 }
 
-async function notify(){
-  const studentId=process.env.STUDENT_ID;
-  if(!studentId) throw new Error('STUDENT_ID missing.');
-  const data=JSON.parse(await fs.readFile(`${WORKDIR}/data.json`,'utf8'));
-  const result=await callWorker({action:'notify',student_id:studentId,data});
-  if(result?.sent){
-    console.log(`[PARENT] SMS grade-change notification sent (${result.changeCount||1} change${Number(result.changeCount||1)===1?'':'s'}).`);
-  }else if(result?.reason==='sms_provider_not_configured'){
-    console.log('[PARENT] Grade change detected, but SMS provider credentials are not configured yet.');
-  }else{
-    console.log(`[PARENT] No SMS sent (${result?.reason||'not needed'}).`);
-  }
-}
-
 async function fail(){
   const studentId=process.env.STUDENT_ID;
   if(!studentId) return;
@@ -172,6 +158,5 @@ async function fail(){
 
 if(MODE==='lease') await lease();
 else if(MODE==='publish') await publish();
-else if(MODE==='notify') await notify();
 else if(MODE==='fail') await fail();
-else throw new Error('Use lease, publish, notify, or fail.');
+else throw new Error('Use lease, publish, or fail.');
