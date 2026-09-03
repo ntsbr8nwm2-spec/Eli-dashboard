@@ -1,0 +1,111 @@
+name: One-time GPA patch
+
+on:
+  push:
+    paths:
+      - '.github/workflows/one-time-gpa-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add GPA extraction and header display
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          school = Path('school-monitor.mjs')
+          s = school.read_text()
+
+          marker = 'async function automaticFocusLogin(page) {'
+          if 'async function scrapeGpaFromCurrentDocumentTree(page)' not in s:
+              if marker not in s:
+                  raise SystemExit('school-monitor insertion marker missing')
+              helper = r'''async function scrapeGpaFromCurrentDocumentTree(page) {
+            for (const frame of page.frames()) {
+              try {
+                const found = await frame.evaluate(() => {
+                  const text = String(document.body?.innerText || "").replace(/\s+/g, " ");
+                  const cumulative = text.match(/\bCumulative\s+GPA\s*:?\s*(\d+(?:\.\d+)?)/i);
+                  const weighted = text.match(/\bCumulative\s+Weighted\s+GPA\s*:?\s*(\d+(?:\.\d+)?)/i);
+                  return {
+                    cumulativeGpa: cumulative ? cumulative[1] : null,
+                    weightedGpa: weighted ? weighted[1] : null
+                  };
+                });
+                if (found?.cumulativeGpa || found?.weightedGpa) {
+                  return found;
+                }
+              } catch {}
+            }
+            return { cumulativeGpa: null, weightedGpa: null };
+          }
+
+          '''
+              s = s.replace(marker, helper + marker, 1)
+
+          if 'async function writeDashboard(current, gpa = {}) {' not in s:
+              old = 'async function writeDashboard(current) {'
+              if old not in s:
+                  raise SystemExit('writeDashboard signature missing')
+              s = s.replace(old, 'async function writeDashboard(current, gpa = {}) {', 1)
+
+          if 'weightedGpa:' not in s:
+              old = '    dateLabel: dashboardDateLabel(),\n    updatedAt: new Date().toISOString(),'
+              new = '    dateLabel: dashboardDateLabel(),\n    gpa: gpa.cumulativeGpa || old.gpa || null,\n    weightedGpa: gpa.weightedGpa || old.weightedGpa || null,\n    updatedAt: new Date().toISOString(),'
+              if old not in s:
+                  raise SystemExit('dashboard data marker missing')
+              s = s.replace(old, new, 1)
+
+          old = '  log(`Current-year courses parsed: ${current.courses.length}.`);\n  await writeDashboard(current);'
+          if 'GPA parsed:' not in s:
+              new = '  log(`Current-year courses parsed: ${current.courses.length}.`);\n  const gpa = await scrapeGpaFromCurrentDocumentTree(page);\n  if (gpa.cumulativeGpa) log(`GPA parsed: ${gpa.cumulativeGpa}.`);\n  else log("Cumulative GPA was not readable on this Focus page.");\n  await writeDashboard(current, gpa);'
+              if old not in s:
+                  raise SystemExit('main GPA call marker missing')
+              s = s.replace(old, new, 1)
+
+          school.write_text(s)
+
+          parent = Path('parent/index.html')
+          p = parent.read_text()
+
+          if '.gpaBadge{' not in p:
+              marker = '.kicker{font-size:10.5px'
+              css = '.heroMain{display:flex;justify-content:space-between;align-items:flex-end;gap:16px}.heroCopy{min-width:0}.gpaBadge{flex:0 0 auto;min-width:82px;padding:9px 12px;border:1px solid rgba(255,255,255,.2);border-radius:15px;background:rgba(255,255,255,.11);text-align:center;box-shadow:0 5px 14px rgba(0,0,0,.08)}.gpaLabel{font-size:9px;font-weight:900;letter-spacing:1.2px;opacity:.7}.gpaValue{font-size:24px;line-height:1.05;font-weight:900;margin-top:2px}'
+              if marker not in p:
+                  raise SystemExit('parent CSS marker missing')
+              p = p.replace(marker, css + marker, 1)
+
+          old_header = '<header class="hero"><div class="topline"><button class="navBtn" id="studentsBtn" type="button">← My students</button><button class="navBtn" id="signOutBtn" type="button">Sign out</button></div><div class="kicker">PRIVATE SCHOOL DASHBOARD</div><h1 id="studentTitle">🎓 School Dashboard</h1><div class="date" id="schoolDate">Latest school update</div><div class="updated" id="updated">Loading…</div></header>'
+          new_header = '<header class="hero"><div class="topline"><button class="navBtn" id="studentsBtn" type="button">← My students</button><button class="navBtn" id="signOutBtn" type="button">Sign out</button></div><div class="heroMain"><div class="heroCopy"><div class="kicker">PRIVATE SCHOOL DASHBOARD</div><h1 id="studentTitle">🎓 School Dashboard</h1><div class="date" id="schoolDate">Latest school update</div><div class="updated" id="updated">Loading…</div></div><div class="gpaBadge" id="gpaBadge" hidden><div class="gpaLabel">GPA</div><div class="gpaValue" id="gpaValue">—</div></div></div></header>'
+          if 'id="gpaBadge"' not in p:
+              if old_header not in p:
+                  raise SystemExit('parent header marker missing')
+              p = p.replace(old_header, new_header, 1)
+
+          marker = "document.getElementById('schoolDate').textContent=d.dateLabel||'Latest school update';const when="
+          if "document.getElementById('gpaValue')" not in p:
+              replacement = "document.getElementById('schoolDate').textContent=d.dateLabel||'Latest school update';const gpaBadge=document.getElementById('gpaBadge');const gpaValue=document.getElementById('gpaValue');const gpa=String(d.gpa??'').trim();if(gpa){gpaValue.textContent=gpa;gpaBadge.hidden=false}else{gpaBadge.hidden=true}const when="
+              if marker not in p:
+                  raise SystemExit('parent render marker missing')
+              p = p.replace(marker, replacement, 1)
+
+          parent.write_text(p)
+          PY
+
+      - name: Commit GPA feature and remove one-time workflow
+        shell: bash
+        run: |
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/one-time-gpa-patch.yml
+          git add school-monitor.mjs parent/index.html
+          git commit -m "Add cumulative GPA to student dashboard header"
+          git push
