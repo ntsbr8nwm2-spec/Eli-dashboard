@@ -1,3 +1,4 @@
+# GPA is collected with the Focus grade run.
 name: Parent dashboard worker
 
 on:
