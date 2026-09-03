@@ -96,6 +96,11 @@ jobs:
         if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success'
         run: node parent-worker-client.mjs publish
 
+      - name: Send grade change SMS notification
+        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success'
+        continue-on-error: true
+        run: node parent-worker-client.mjs notify
+
       - name: Run Focus activity
         if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success'
         id: news
