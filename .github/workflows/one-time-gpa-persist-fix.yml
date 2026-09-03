@@ -1,0 +1,40 @@
+name: One-time GPA persist fix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/one-time-gpa-persist-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add GPA fields to dashboard JSON
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path=Path('school-monitor.mjs')
+          s=path.read_text()
+          needle='    dateLabel: dashboardDateLabel(),\n    updatedAt: new Date().toISOString(),'
+          replacement='    dateLabel: dashboardDateLabel(),\n    gpa: gpa.cumulativeGpa || old.gpa || null,\n    weightedGpa: gpa.weightedGpa || old.weightedGpa || null,\n    updatedAt: new Date().toISOString(),'
+          if 'gpa: gpa.cumulativeGpa || old.gpa || null' not in s:
+              if needle not in s:
+                  raise SystemExit('dashboard JSON marker missing')
+              s=s.replace(needle,replacement,1)
+          path.write_text(s)
+          PY
+      - name: Commit fix and remove one-time workflow
+        shell: bash
+        run: |
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/one-time-gpa-persist-fix.yml
+          git add school-monitor.mjs
+          git commit -m "Persist GPA in dashboard data"
+          git push
