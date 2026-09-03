@@ -82,5 +82,6 @@ $('saveSchool').onclick=async()=>{clearMessage('connectResult');const username=$
 $('signOut').onclick=async()=>{await supabase.auth.signOut();students=[];currentUser=null;authView();setMode('login')};
 const {data:{session}}=await supabase.auth.getSession();if(session?.user)await showHub(session.user);else authView();supabase.auth.onAuthStateChange((_e,s)=>{if(!s?.user)return;setTimeout(()=>showHub(s.user),0)});
 </script>
+<script type="module" src="./notifications-widget.js"></script>
 </body>
 </html>
