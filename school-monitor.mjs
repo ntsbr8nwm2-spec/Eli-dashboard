@@ -409,6 +409,26 @@ async function scrapeGrades(page, navigate = true) {
   return { schoolYear: currentSchoolYear(), courses: [] };
 }
 
+async function scrapeGpaFromCurrentDocumentTree(page) {
+  for (const frame of page.frames()) {
+    try {
+      const found = await frame.evaluate(() => {
+        const text = String(document.body?.innerText || "").replace(/\s+/g, " ");
+        const cumulative = text.match(/\bCumulative\s+GPA\s*:?\s*(\d+(?:\.\d+)?)/i);
+        const weighted = text.match(/\bCumulative\s+Weighted\s+GPA\s*:?\s*(\d+(?:\.\d+)?)/i);
+        return {
+          cumulativeGpa: cumulative ? cumulative[1] : null,
+          weightedGpa: weighted ? weighted[1] : null
+        };
+      });
+      if (found?.cumulativeGpa || found?.weightedGpa) {
+        return found;
+      }
+    } catch {}
+  }
+  return { cumulativeGpa: null, weightedGpa: null };
+}
+
 async function automaticFocusLogin(page) {
   log("Starting instrumented OG-style Focus login.");
   await gotoSafe(page, GRADES_URL);
@@ -575,7 +595,7 @@ function buildDashboardGrades(courses, oldData) {
   return { grades, changeCount };
 }
 
-async function writeDashboard(current) {
+async function writeDashboard(current, gpa = {}) {
   const old = await readDashboard();
   const { grades, changeCount } = buildDashboardGrades(current.courses, old);
 
@@ -645,7 +665,10 @@ try {
   }
 
   log(`Current-year courses parsed: ${current.courses.length}.`);
-  await writeDashboard(current);
+  const gpa = await scrapeGpaFromCurrentDocumentTree(page);
+  if (gpa.cumulativeGpa) log(`GPA parsed: ${gpa.cumulativeGpa}.`);
+  else log("Cumulative GPA was not readable on this Focus page.");
+  await writeDashboard(current, gpa);
   await fs.rm(DEBUG_PATH, { force: true }).catch(() => {});
   log("Unattended Focus check completed successfully.");
 } catch (error) {
