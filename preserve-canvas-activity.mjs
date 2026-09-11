@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 
-// Manual collector trigger: 2026-09-11T19:47Z run 2.
+// Manual collector trigger: 2026-09-11T21:12Z David inventory refresh.
 const DATA_PATH = "data.json";
 
 const data = JSON.parse(await fs.readFile(DATA_PATH, "utf8"));
@@ -8,7 +8,7 @@ const activity = Array.isArray(data.activity) ? data.activity : [];
 const status = String(data.activityStatus || "");
 
 const hasCanvasLabels = activity.some(line =>
-  / · (?:Submission|Due date activity|Grading|Quiz activity|Assignment activity|Discussion|Message|Announcement|Canvas activity)(?: · |$)/.test(String(line || ""))
+  / · (?:Submission|Due date activity|Not graded yet|Grading|Quiz activity|Assignment activity|Discussion|Message|Announcement|Canvas activity)(?: · |$)/.test(String(line || ""))
 );
 
 if (activity.length && (status.includes("Recent Canvas activity") || hasCanvasLabels)) {
