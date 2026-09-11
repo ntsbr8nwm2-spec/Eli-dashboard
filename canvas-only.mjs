@@ -96,10 +96,28 @@ async function canvasIdentityAndActivity(page){
       const [profile,stream,courses]=await Promise.all([
         get("/api/v1/users/self/profile"),
         getAll("/api/v1/users/self/activity_stream?per_page=100"),
-        getAll("/api/v1/courses?enrollment_state=active&per_page=100")
+        getAll("/api/v1/courses?enrollment_state=active&include[]=term&per_page=100")
       ]);
 
-      const activeCourses=Array.isArray(courses)?courses.filter(c=>c?.id!=null):[];
+      const nowDate=new Date();
+      const schoolStartYear=nowDate.getMonth()>=6?nowDate.getFullYear():nowDate.getFullYear()-1;
+      const schoolEndYear=schoolStartYear+1;
+      const schoolStart=Date.parse(`${schoolStartYear}-07-01T00:00:00Z`);
+      const schoolEnd=Date.parse(`${schoolEndYear}-07-01T00:00:00Z`);
+      const courseCurrent=c=>{
+        const label=clean(c?.name||c?.course_code||"");
+        const ym=label.match(/\b(20\d{2})\s*[-–—/]\s*(20\d{2})\b/);
+        if(ym)return Number(ym[1])===schoolStartYear&&Number(ym[2])===schoolEndYear;
+        const startRaw=c?.term?.start_at||c?.start_at||"";
+        const endRaw=c?.term?.end_at||c?.end_at||"";
+        const startMs=startRaw?Date.parse(startRaw):NaN;
+        const endMs=endRaw?Date.parse(endRaw):NaN;
+        if(Number.isFinite(endMs)&&endMs<schoolStart)return false;
+        if(Number.isFinite(startMs)&&startMs>=schoolEnd)return false;
+        return true;
+      };
+      const activeCourses=Array.isArray(courses)?courses.filter(c=>c?.id!=null&&courseCurrent(c)):[];
+      const allowedCourseIds=new Set(activeCourses.map(c=>String(c.id)));
       const courseMap={};
       for(const c of activeCourses){
         const label=clean(c?.name||c?.course_code||"");
@@ -124,6 +142,9 @@ async function canvasIdentityAndActivity(page){
         byCourse[group.courseId]=[];
         for(const a of group.assignments){
           if(!a?.id)continue;
+          const rawAssignmentDates=[a.due_at,a.updated_at,a.created_at,a?.submission?.submitted_at,a?.submission?.graded_at,a?.submission?.updated_at].filter(Boolean);
+          const assignmentDates=rawAssignmentDates.map(v=>Date.parse(v)).filter(Number.isFinite);
+          if(assignmentDates.length&&!assignmentDates.some(ms=>ms>=schoolStart&&ms<schoolEnd))continue;
           const assignmentName=clean(a.name||"");
           const normalizedName=norm(assignmentName);
           const sub=a.submission||{};
@@ -177,6 +198,9 @@ async function canvasIdentityAndActivity(page){
           const rawTitle=clean(item?.title||item?.message||item?.notification_category||item?.type||"");
           if(!rawTitle)continue;
           const courseId=String(item?.course_id??"");
+          if(courseId&&!allowedCourseIds.has(courseId))continue;
+          const eventMs=item?.created_at?Date.parse(item.created_at):NaN;
+          if(Number.isFinite(eventMs)&&(eventMs<schoolStart||eventMs>=schoolEnd))continue;
           const course=clean(courseMap[courseId]||item?.context_name||"");
           let assignmentId="";
           for(const candidate of [item?.assignment_id,item?.asset_id]){
