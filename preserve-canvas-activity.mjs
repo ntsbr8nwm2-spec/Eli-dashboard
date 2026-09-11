@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 
-// Manual collector trigger: 2026-09-11T21:34Z unlimited David refresh.
+// Manual collector trigger: 2026-09-11T21:37Z unlimited David retry.
 const DATA_PATH = "data.json";
 
 const data = JSON.parse(await fs.readFile(DATA_PATH, "utf8"));
