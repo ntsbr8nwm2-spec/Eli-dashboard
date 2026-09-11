@@ -13,6 +13,7 @@ on:
       - 'canvas-guard.mjs'
       - 'focus-news-v2.mjs'
       - 'sanitize-dashboard.mjs'
+      - 'preserve-canvas-activity.mjs'
       - '.github/workflows/parent-worker.yml'
 
 permissions:
@@ -46,7 +47,7 @@ jobs:
       - name: Prepare isolated student workspace
         if: env.NO_PARENT_JOB != 'true'
         run: |
-          cp school-monitor.mjs canvas-only.mjs canvas-guard.mjs focus-news-v2.mjs sanitize-dashboard.mjs "$PARENT_WORKDIR"/
+          cp school-monitor.mjs canvas-only.mjs canvas-guard.mjs focus-news-v2.mjs sanitize-dashboard.mjs preserve-canvas-activity.mjs "$PARENT_WORKDIR"/
           chmod 700 "$PARENT_WORKDIR"
           chmod 600 "$PARENT_WORKDIR"/*.json || true
 
@@ -92,6 +93,11 @@ jobs:
         if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success'
         working-directory: /tmp/parent-school-run
         run: node sanitize-dashboard.mjs
+
+      - name: Preserve categorized Canvas activity
+        if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success'
+        working-directory: /tmp/parent-school-run
+        run: node preserve-canvas-activity.mjs
 
       - name: Publish grades Canvas and fallback activity
         if: env.NO_PARENT_JOB != 'true' && steps.grades.outcome == 'success' && steps.canvas.outcome == 'success'
