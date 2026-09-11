@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'apply-canvas-inventory-upgrade.mjs'
+      - '.github/workflows/apply-canvas-inventory-upgrade.yml'
 
 permissions:
   contents: write
