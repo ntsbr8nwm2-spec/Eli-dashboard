@@ -98,6 +98,7 @@ async function canvasIdentityAndActivity(page){
 
       const byId={};
       const byCourse={};
+      const inventory=[];
       const fmt=n=>Number.isInteger(n)?String(n):String(Math.round(n*100)/100);
       const pct=n=>Number.isInteger(n)?String(n):String(Math.round(n*10)/10);
 
@@ -132,14 +133,26 @@ async function canvasIdentityAndActivity(page){
             id:String(a.id),
             name:assignmentName,
             normalizedName,
-            gradeText:gradeParts.join(" · ")
+            gradeText:gradeParts.join(" · "),
+            course:clean(courseMap[group.courseId]||""),
+            dueAt:a.due_at||"",
+            submittedAt:sub.submitted_at||"",
+            updatedAt:a.updated_at||"",
+            createdAt:a.created_at||"",
+            workflowState:clean(sub.workflow_state||""),
+            gradingType:clean(a.grading_type||""),
+            published:a.published!==false,
+            excused:Boolean(sub.excused)
           };
           byId[`${group.courseId}:${a.id}`]=info;
           byCourse[group.courseId].push(info);
+          inventory.push(info);
         }
       }
 
       const activity=[];
+      const activityTimes={};
+      let recentCount=0;
       if(Array.isArray(stream)){
         for(const item of stream){
           const rawTitle=clean(item?.title||item?.message||item?.notification_category||item?.type||"");
@@ -171,6 +184,7 @@ async function canvasIdentityAndActivity(page){
 
           const displayTitle=info?.name||rawTitle;
           const event=eventLabel(item);
+          if(event==="Due date activity")continue;
           let when="";
           if(item?.created_at){
             const d=new Date(item.created_at);
@@ -179,10 +193,37 @@ async function canvasIdentityAndActivity(page){
           const core=[course,displayTitle].filter(Boolean).join(" — ");
           const currentGrade=info?.gradeText?`Current grade: ${info.gradeText}`:"";
           const line=[core,event,currentGrade,when].filter(Boolean).join(" · ");
-          if(line&&!activity.includes(line))activity.push(line);
-          if(activity.length>=15)break;
+          if(line&&!activity.includes(line)){
+            activity.push(line);
+            activityTimes[line]=item?.created_at?(Date.parse(item.created_at)||0):0;
+            recentCount++;
+          }
+          if(recentCount>=15)break;
         }
       }
+
+      const now=Date.now();
+      for(const info of inventory){
+        const gradingType=String(info.gradingType||"").toLowerCase();
+        const workflowState=String(info.workflowState||"").toLowerCase();
+        if(!info.published||info.excused||info.gradeText||gradingType==="not_graded"||workflowState==="graded")continue;
+        const dueMs=info.dueAt?Date.parse(info.dueAt):NaN;
+        if(Number.isFinite(dueMs)&&dueMs>now)continue;
+        const rawDate=info.dueAt||info.submittedAt||info.updatedAt||info.createdAt||"";
+        const sortMs=rawDate?(Date.parse(rawDate)||0):0;
+        let when="";
+        if(rawDate){
+          const d=new Date(rawDate);
+          if(!Number.isNaN(d.getTime()))when=d.toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+        }
+        const core=[info.course,info.name].filter(Boolean).join(" — ");
+        const line=[core,"Not graded yet",when].filter(Boolean).join(" · ");
+        if(line&&!activity.includes(line)){
+          activity.push(line);
+          activityTimes[line]=sortMs;
+        }
+      }
+      activity.sort((a,b)=>(activityTimes[b]||0)-(activityTimes[a]||0));
       return {firstName,activity};
     });
   }catch{
