@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 
-// Manual collector trigger: 2026-09-11T22:14Z duplicate current-school-year David refresh.
+// Manual collector trigger: 2026-09-11T22:24Z Eli full-inventory refresh.
 const DATA_PATH = "data.json";
 
 const data = JSON.parse(await fs.readFile(DATA_PATH, "utf8"));
