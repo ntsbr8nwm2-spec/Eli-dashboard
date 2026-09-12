@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 
 // Canvas activity preservation supports enriched assignment/submission states.
-// Manual collector trigger: David enriched status refresh 1.
+// Manual collector trigger: David enriched status refresh 2.
 const DATA_PATH = "data.json";
 
 const data = JSON.parse(await fs.readFile(DATA_PATH, "utf8"));
