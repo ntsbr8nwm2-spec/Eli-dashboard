@@ -183,7 +183,10 @@ async function canvasIdentityAndActivity(page){
             workflowState:clean(sub.workflow_state||""),
             gradingType:clean(a.grading_type||""),
             published:a.published!==false,
-            excused:Boolean(sub.excused)
+            excused:Boolean(sub.excused),
+            missing:Boolean(sub.missing),
+            late:Boolean(sub.late),
+            secondsLate:Number(sub.seconds_late)||0
           };
           byId[`${group.courseId}:${a.id}`]=info;
           byCourse[group.courseId].push(info);
@@ -258,7 +261,10 @@ async function canvasIdentityAndActivity(page){
             if(!Number.isNaN(d.getTime()))when=d.toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
           }
           const core=[info.course,info.name].filter(Boolean).join(" — ");
-          const line=[core,"Submission",`Current grade: ${info.gradeText}`,when].filter(Boolean).join(" · ");
+          const status=[];
+          if(info.missing)status.push("Missing");
+          if(info.late)status.push("Late");
+          const line=[core,"Submission",...status,`Current grade: ${info.gradeText}`,when].filter(Boolean).join(" · ");
           if(line&&!activity.includes(line)){
             activity.push(line);
             activityTimes[line]=sortMs;
@@ -277,7 +283,14 @@ async function canvasIdentityAndActivity(page){
           if(!Number.isNaN(d.getTime()))when=d.toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
         }
         const core=[info.course,info.name].filter(Boolean).join(" — ");
-        const line=[core,"Not graded yet",when].filter(Boolean).join(" · ");
+        const submitted=Boolean(info.submittedAt)||workflowState==="submitted"||workflowState==="pending_review";
+        let status="Not Submitted";
+        if(info.missing)status="Missing";
+        else if(submitted&&info.late)status="Submitted Late — Awaiting Grade";
+        else if(submitted)status="Submitted — Awaiting Grade";
+        else if(info.late)status="Late";
+        else if(workflowState&&workflowState!=="unsubmitted")status=`Canvas status: ${workflowState}`;
+        const line=[core,status,when].filter(Boolean).join(" · ");
         if(line&&!activity.includes(line)){
           activity.push(line);
           activityTimes[line]=sortMs;
@@ -335,7 +348,7 @@ try{
   if(canvasMeta.firstName)data.studentName=canvasMeta.firstName;
   if(canvasMeta.activity.length){
     data.activity=canvasMeta.activity;
-    data.activityStatus="Canvas activity with full assignment history";
+    data.activityStatus="Canvas activity with full assignment history and submission status";
   }
   data.updatedAt=new Date().toISOString();
   await fs.writeFile(DATA_PATH,JSON.stringify(data,null,2)+"\n","utf8");
