@@ -1,5 +1,4 @@
 # GPA is collected with the Focus grade run.
-# Temporary diagnostic rerun for alternate David Canvas page content.
 name: Parent dashboard worker
 
 on:
@@ -12,7 +11,6 @@ on:
       - 'school-monitor.mjs'
       - 'canvas-only.mjs'
       - 'canvas-guard.mjs'
-      - 'canvas-module-diagnostic.mjs'
       - 'focus-news-v2.mjs'
       - 'sanitize-dashboard.mjs'
       - 'preserve-canvas-activity.mjs'
@@ -49,7 +47,7 @@ jobs:
       - name: Prepare isolated student workspace
         if: env.NO_PARENT_JOB != 'true'
         run: |
-          cp school-monitor.mjs canvas-only.mjs canvas-guard.mjs canvas-module-diagnostic.mjs focus-news-v2.mjs sanitize-dashboard.mjs preserve-canvas-activity.mjs "$PARENT_WORKDIR"/
+          cp school-monitor.mjs canvas-only.mjs canvas-guard.mjs focus-news-v2.mjs sanitize-dashboard.mjs preserve-canvas-activity.mjs "$PARENT_WORKDIR"/
           chmod 700 "$PARENT_WORKDIR"
           chmod 600 "$PARENT_WORKDIR"/*.json || true
 
@@ -85,12 +83,6 @@ jobs:
         working-directory: /tmp/parent-school-run
         continue-on-error: true
         run: node canvas-only.mjs
-
-      - name: Diagnose Canvas module inventory
-        if: env.NO_PARENT_JOB != 'true' && steps.canvas.outcome == 'success'
-        working-directory: /tmp/parent-school-run
-        continue-on-error: true
-        run: node canvas-module-diagnostic.mjs
 
       - name: Confirm empty Canvas result
         if: env.NO_PARENT_JOB != 'true' && steps.canvas.outcome == 'success'
