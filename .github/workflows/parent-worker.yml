@@ -1,4 +1,5 @@
 # GPA is collected with the Focus grade run.
+# Temporary diagnostic rerun for David Canvas page content.
 name: Parent dashboard worker
 
 on:
