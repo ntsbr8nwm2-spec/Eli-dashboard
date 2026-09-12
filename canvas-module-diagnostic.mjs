@@ -25,8 +25,11 @@ const page=await context.newPage();
 try{
   if(!(await ensureCanvas(page))) throw new Error("Canvas authentication timed out.");
   const result=await page.evaluate(async()=>{
-    const clean=v=>String(v||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
+    const clean=v=>String(v||"").replace(/<[^>]*>/g," ").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/\s+/g," ").trim();
+    const termRe=/gumm|osmos|bear|diffus|membrane/i;
+    const snippet=v=>{const raw=clean(v);const m=raw.search(termRe);if(m<0)return raw.slice(0,260);return raw.slice(Math.max(0,m-120),m+260);};
     const getPage=async url=>{try{const r=await fetch(url,{credentials:"same-origin",headers:{Accept:"application/json"}});if(!r.ok)return{data:null,next:""};const data=await r.json();const link=String(r.headers.get("Link")||"");const nextMatch=link.split(",").map(x=>x.trim()).find(x=>/rel="next"/i.test(x));return{data,next:nextMatch?.match(/<([^>]+)>/)?.[1]||""};}catch{return{data:null,next:""};}};
+    const get=async url=>(await getPage(url)).data;
     const getAll=async url=>{const out=[],seen=new Set();let next=url;while(next&&!seen.has(next)){seen.add(next);const p=await getPage(next);if(Array.isArray(p.data))out.push(...p.data);else if(p.data!=null&&!out.length)return p.data;next=p.next;}return out;};
     const now=new Date();const sy=now.getMonth()>=6?now.getFullYear():now.getFullYear()-1, ey=sy+1;const schoolStart=Date.parse(`${sy}-07-01T00:00:00Z`),schoolEnd=Date.parse(`${ey}-07-01T00:00:00Z`);
     const current=c=>{const label=clean(c?.name||c?.course_code||"");const ym=label.match(/\b(20\d{2})\s*[-–—/]\s*(20\d{2})\b/);if(ym)return Number(ym[1])===sy&&Number(ym[2])===ey;const s=Date.parse(c?.term?.start_at||c?.start_at||""),e=Date.parse(c?.term?.end_at||c?.end_at||"");if(Number.isFinite(e)&&e<schoolStart)return false;if(Number.isFinite(s)&&s>=schoolEnd)return false;return true;};
@@ -35,12 +38,23 @@ try{
     for(const c of courses){
       const course=clean(c.name||c.course_code||"");
       const assignments=await getAll(`/api/v1/courses/${c.id}/assignments?include[]=submission&per_page=100`);
-      for(const a of assignments){const title=clean(a?.name||"");if(/gumm|osmos|bear|diffus|membrane/i.test(title)){rows.push({source:'assignment',course,title,published:a?.published!==false,grading_type:a?.grading_type||'',due_at:a?.due_at||'',points_possible:a?.points_possible??null,submission:{workflow_state:a?.submission?.workflow_state||'',submitted_at:a?.submission?.submitted_at||'',missing:Boolean(a?.submission?.missing),late:Boolean(a?.submission?.late),grade:a?.submission?.grade??null,score:a?.submission?.score??null}});}}
+      for(const a of assignments){
+        const title=clean(a?.name||"");
+        const desc=String(a?.description||"");
+        if(termRe.test(`${title} ${desc}`)) rows.push({source:'assignment',course,title,published:a?.published!==false,grading_type:a?.grading_type||'',due_at:a?.due_at||'',points_possible:a?.points_possible??null,matched_in:termRe.test(title)?'title':'description',snippet:snippet(desc||title),submission:{workflow_state:a?.submission?.workflow_state||'',submitted_at:a?.submission?.submitted_at||'',missing:Boolean(a?.submission?.missing),late:Boolean(a?.submission?.late),grade:a?.submission?.grade??null,score:a?.submission?.score??null}});
+      }
       if(!/LIFE SCIENCE|SCIENCE/i.test(course)) continue;
       const modules=await getAll(`/api/v1/courses/${c.id}/modules?per_page=100`);
       for(const m of modules){
         const items=await getAll(`/api/v1/courses/${c.id}/modules/${m.id}/items?per_page=100`);
-        for(const item of items){const title=clean(item?.title||"");if(/gumm|osmos|bear|diffus|membrane|lab/i.test(title)){rows.push({source:'module_item',course,module:clean(m?.name||''),title,type:item?.type||'',content_id:item?.content_id??null,html_url:item?.html_url||'',external_url:item?.external_url||'',completion_requirement:item?.completion_requirement||null});}}
+        for(const item of items){
+          const title=clean(item?.title||"");
+          let detail=null;
+          if(item?.url) detail=await get(item.url);
+          const body=String(detail?.body||detail?.description||"");
+          const hay=`${title} ${body}`;
+          if(termRe.test(hay)) rows.push({source:'module_content',course,module:clean(m?.name||''),title,type:item?.type||'',page_url:item?.page_url||'',api_url:item?.url||'',html_url:item?.html_url||'',matched_in:termRe.test(title)?'title':'body',snippet:snippet(body||title)});
+        }
       }
     }
     return rows;
