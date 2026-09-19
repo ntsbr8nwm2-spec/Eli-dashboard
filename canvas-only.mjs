@@ -58,7 +58,7 @@ async function browardDirectoryEmail(name){
     url.searchParams.set("const_search_first_name",parts.first);
     url.searchParams.set("const_search_last_name",parts.last);
     url.searchParams.set("const_search_department","");
-    const response=await fetch(url,{headers:{"user-agent":"Mozilla/5.0 school-dashboard-contact-resolver"}});
+    const response=await fetch(url,{headers:{"user-agent":"Mozilla/5.0 school-dashboard-contact-resolver"},signal:AbortSignal.timeout(8000)});
     if(response.ok){
       const html=await response.text();
       const emails=[...new Set((html.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig)||[])
@@ -77,8 +77,13 @@ async function browardDirectoryEmail(name){
         });
         if(matches.length===1)result=matches[0];
       }
+      console.log(`[DIRECTORY] ${name}: status=${response.status} bytes=${html.length} emails=${emails.length} resolved=${Boolean(result)}`);
+    }else{
+      console.log(`[DIRECTORY] ${name}: status=${response.status} resolved=false`);
     }
-  }catch{}
+  }catch(error){
+    console.log(`[DIRECTORY] ${name}: lookup failed (${String(error?.name||"error")})`);
+  }
   directoryEmailCache.set(key,result);
   return result;
 }
