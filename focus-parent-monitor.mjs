@@ -152,9 +152,13 @@ async function chooseStudentIfNeeded(page) {
 
 function parseRows(rows, year) {
   const gradePattern = /^(?:NG|\d{1,3}%\s*[A-F][+-]?|[A-F][+-]?)$/i;
+  const emailPattern = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
   const out = [];
 
-  for (const cells of rows) {
+  for (const rawRow of rows) {
+    const cells = Array.isArray(rawRow) ? rawRow : (Array.isArray(rawRow?.cells) ? rawRow.cells : []);
+    const cellEmails = Array.isArray(rawRow?.cellEmails) ? rawRow.cellEmails : [];
+    const rowEmails = Array.isArray(rawRow?.emails) ? rawRow.emails : [];
     const yi = cells.findIndex(v => String(v).replace(/\s/g,"").includes(year.replace(/\s/g,"")));
     if (yi < 0) continue;
 
@@ -163,6 +167,10 @@ function parseRows(rows, year) {
     let key = cells[yi + 4] || "";
     let course = cells[yi + 5] || "";
     let teacher = cells[yi + 6] || "";
+    const teacherCellEmails = Array.isArray(cellEmails[yi + 6]) ? cellEmails[yi + 6] : [];
+    const teacherEmail = [...teacherCellEmails, ...rowEmails]
+      .map(value => String(value || "").trim())
+      .find(value => emailPattern.test(value)) || "";
 
     const gradeTokens = cells.slice(yi + 1).filter(v => gradePattern.test(String(v).trim()));
     if (!gradeTokens.length) continue;
@@ -180,7 +188,7 @@ function parseRows(rows, year) {
     }
 
     if (!course) continue;
-    out.push({ key: key || `${period}-${course}`, period, course, teacher, latest: gradeTokens.at(-1) || "NG", gradeTokens });
+    out.push({ key: key || `${period}-${course}`, period, course, teacher, teacherEmail, latest: gradeTokens.at(-1) || "NG", gradeTokens });
   }
 
   const seen = new Set();
@@ -196,7 +204,33 @@ async function scrapeGrades(page) {
 
   const year = schoolYear();
   for (const frame of page.frames()) {
-    const rows = await frame.evaluate(() => [...document.querySelectorAll("tr")].map(tr => [...tr.querySelectorAll("th,td")].map(td => String(td.innerText || "").replace(/\s+/g," ").trim()))).catch(() => []);
+    const rows = await frame.evaluate(() => {
+      const emailRe = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig;
+      const collect = root => {
+        const found = new Set();
+        const add = value => {
+          const matches = String(value || "").match(emailRe) || [];
+          for (const match of matches) found.add(match);
+        };
+        for (const el of [root, ...root.querySelectorAll("*")]) {
+          add(el.textContent);
+          add(el.getAttribute?.("href"));
+          add(el.getAttribute?.("data-email"));
+          add(el.getAttribute?.("data-user-email"));
+          add(el.getAttribute?.("title"));
+          add(el.getAttribute?.("onclick"));
+        }
+        return [...found];
+      };
+      return [...document.querySelectorAll("tr")].map(tr => {
+        const cells = [...tr.querySelectorAll("th,td")];
+        return {
+          cells: cells.map(td => String(td.innerText || "").replace(/\s+/g," ").trim()),
+          cellEmails: cells.map(cell => collect(cell)),
+          emails: collect(tr)
+        };
+      });
+    }).catch(() => []);
     const courses = parseRows(rows, year);
     if (courses.length) return { year, courses };
   }
@@ -232,7 +266,7 @@ async function writeGrades(courses) {
     let change = "";
     if (!prior) { change = "NEW"; changes++; }
     else if ((prior.percent ?? null) !== parsed.percent || String(prior.letter || "NG") !== parsed.letter) { change = "CHANGED"; changes++; }
-    return { course: name, period: String(c.period || "").trim(), day: classDay(c.period), teacher: String(c.teacher || "").trim(), display: c.latest || "NG", percent: parsed.percent, letter: parsed.letter, change };
+    return { course: name, period: String(c.period || "").trim(), day: classDay(c.period), teacher: String(c.teacher || "").trim(), teacherEmail: String(c.teacherEmail || "").trim(), display: c.latest || "NG", percent: parsed.percent, letter: parsed.letter, change };
   });
 
   const data = {
