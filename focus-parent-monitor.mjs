@@ -25,6 +25,32 @@ function dateLabel() {
   return new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric" }).format(new Date());
 }
 
+function currentSchoolDay() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short"
+  }).formatToParts(new Date());
+
+  const year = Number(parts.find(p => p.type === "year")?.value);
+  const month = Number(parts.find(p => p.type === "month")?.value);
+  const day = Number(parts.find(p => p.type === "day")?.value);
+  const weekday = parts.find(p => p.type === "weekday")?.value || "";
+
+  if (weekday === "Mon" || weekday === "Wed") return "A";
+  if (weekday === "Tue" || weekday === "Thu") return "B";
+  if (weekday === "Fri") {
+    // Coral Glades alternates Friday block days. Sep 18, 2026 is an A day.
+    const anchor = Date.UTC(2026, 8, 18);
+    const current = Date.UTC(year, month - 1, day);
+    const weeks = Math.round((current - anchor) / (7 * 24 * 60 * 60 * 1000));
+    return ((weeks % 2) + 2) % 2 === 0 ? "A" : "B";
+  }
+  return "";
+}
+
 function classDay(period) {
   const text = String(period || "").trim().toUpperCase();
   if (/\bA\b/.test(text) || /(?:^|[^A-Z])A(?:[^A-Z]|$)/.test(text)) return "A";
@@ -206,11 +232,12 @@ async function writeGrades(courses) {
     let change = "";
     if (!prior) { change = "NEW"; changes++; }
     else if ((prior.percent ?? null) !== parsed.percent || String(prior.letter || "NG") !== parsed.letter) { change = "CHANGED"; changes++; }
-    return { course: name, period: String(c.period || "").trim(), day: classDay(c.period), display: c.latest || "NG", percent: parsed.percent, letter: parsed.letter, change };
+    return { course: name, period: String(c.period || "").trim(), day: classDay(c.period), teacher: String(c.teacher || "").trim(), display: c.latest || "NG", percent: parsed.percent, letter: parsed.letter, change };
   });
 
   const data = {
     dateLabel: dateLabel(),
+    schoolDay: currentSchoolDay(),
     updatedAt: new Date().toISOString(),
     gradeStatus: changes ? `🚨 ${changes} change${changes === 1 ? "" : "s"}` : "Current grades",
     grades,
