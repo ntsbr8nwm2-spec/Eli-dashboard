@@ -124,6 +124,22 @@ async function canvasIdentityAndActivity(page){
         if(label)courseMap[String(c.id)]=label;
       }
 
+      const emailFrom=value=>{
+        const match=String(value||"").match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+        return match?match[0]:"";
+      };
+      const teacherGroups=await Promise.all(activeCourses.map(async c=>{
+        const users=await getAll(`/api/v1/courses/${encodeURIComponent(c.id)}/users?enrollment_type[]=teacher&include[]=email&per_page=100`);
+        const teachers=(Array.isArray(users)?users:[]).map(u=>({
+          name:clean(u?.name||u?.display_name||u?.sortable_name||u?.short_name||""),
+          email:emailFrom(u?.email||u?.login_id||u?.sis_login_id||"")
+        })).filter(t=>t.name||t.email);
+        return {courseId:String(c.id),course:clean(courseMap[String(c.id)]||c?.name||c?.course_code||""),teachers};
+      }));
+      const teacherContacts=teacherGroups.flatMap(group=>
+        group.teachers.map(t=>({courseId:group.courseId,course:group.course,name:t.name,email:t.email}))
+      );
+
       const name=clean(profile?.short_name||profile?.name||profile?.sortable_name||"");
       const firstName=clean(name.split(/\s+/)[0]||"").replace(/[^A-Za-zÀ-ÖØ-öø-ÿ'’-]/g,"").slice(0,40);
 
@@ -297,10 +313,10 @@ async function canvasIdentityAndActivity(page){
         }
       }
       activity.sort((a,b)=>(activityTimes[b]||0)-(activityTimes[a]||0));
-      return {firstName,activity};
+      return {firstName,activity,teacherContacts};
     });
   }catch{
-    return {firstName:"",activity:[]};
+    return {firstName:"",activity:[],teacherContacts:[]};
   }
 }
 
@@ -346,6 +362,24 @@ try{
   if(!data)throw new Error("data.json could not be read.");
   data.assignments=assignments;
   if(canvasMeta.firstName)data.studentName=canvasMeta.firstName;
+  if(Array.isArray(data.grades)&&Array.isArray(canvasMeta.teacherContacts)&&canvasMeta.teacherContacts.length){
+    const normalizeCourse=value=>String(cleanCourse(value)||"").toLowerCase().replace(/\s+/g," ").trim();
+    const emailOk=value=>/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(String(value||"").trim());
+    for(const grade of data.grades){
+      const key=normalizeCourse(grade.course);
+      let candidates=canvasMeta.teacherContacts.filter(contact=>{
+        const contactKey=normalizeCourse(contact.course);
+        return contactKey===key||contactKey.startsWith(key+"-")||key.startsWith(contactKey+"-");
+      });
+      if(!candidates.length)continue;
+      const currentTeacher=String(grade.teacher||"").trim().toLowerCase();
+      const surname=currentTeacher.split(",")[0].trim();
+      const matched=surname?candidates.find(contact=>String(contact.name||"").toLowerCase().includes(surname)):null;
+      const contact=matched||candidates.find(contact=>emailOk(contact.email))||candidates[0];
+      if(!grade.teacher&&contact?.name)grade.teacher=String(contact.name).trim();
+      if(!emailOk(grade.teacherEmail)&&emailOk(contact?.email))grade.teacherEmail=String(contact.email).trim();
+    }
+  }
   if(canvasMeta.activity.length){
     data.activity=canvasMeta.activity;
     data.activityStatus="Canvas activity with full assignment history and submission status";
