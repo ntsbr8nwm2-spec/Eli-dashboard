@@ -130,11 +130,19 @@ async function canvasIdentityAndActivity(page){
       };
       const teacherGroups=await Promise.all(activeCourses.map(async c=>{
         const users=await getAll(`/api/v1/courses/${encodeURIComponent(c.id)}/users?enrollment_type[]=teacher&include[]=email&per_page=100`);
-        const teachers=(Array.isArray(users)?users:[]).map(u=>({
-          name:clean(u?.name||u?.display_name||u?.sortable_name||u?.short_name||""),
-          email:emailFrom(u?.email||u?.login_id||u?.sis_login_id||"")
-        })).filter(t=>t.name||t.email);
-        return {courseId:String(c.id),course:clean(courseMap[String(c.id)]||c?.name||c?.course_code||""),teachers};
+        const teachers=await Promise.all((Array.isArray(users)?users:[]).map(async u=>{
+          let email=emailFrom(u?.email||u?.login_id||u?.sis_login_id||"");
+          if(!email&&u?.id!=null){
+            const profile=await get(`/api/v1/users/${encodeURIComponent(u.id)}/profile`);
+            email=emailFrom(profile?.primary_email||profile?.email||profile?.login_id||profile?.sis_login_id||"");
+          }
+          return {
+            id:u?.id!=null?String(u.id):"",
+            name:clean(u?.name||u?.display_name||u?.sortable_name||u?.short_name||""),
+            email
+          };
+        }));
+        return {courseId:String(c.id),course:clean(courseMap[String(c.id)]||c?.name||c?.course_code||""),teachers:teachers.filter(t=>t.name||t.email)};
       }));
       const teacherContacts=teacherGroups.flatMap(group=>
         group.teachers.map(t=>({courseId:group.courseId,course:group.course,name:t.name,email:t.email}))
