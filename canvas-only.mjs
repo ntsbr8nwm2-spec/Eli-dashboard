@@ -28,6 +28,60 @@ function etParts() {
 function todayKey(){const p=etParts();return `${p.year}-${String(p.month).padStart(2,"0")}-${String(p.day).padStart(2,"0")}`;}
 function schoolYear(){const p=etParts();return p.month>=7?[p.year,p.year+1]:[p.year-1,p.year];}
 function cleanCourse(v){const s=String(v||"").trim(),u=s.toUpperCase();if(u.includes("ANAT PHYSIO"))return"Anatomy";if(u.includes("BIOLOGY 1 HON"))return"Biology";if(u.includes("AICE ENG LANG"))return"English";if(u.includes("GEOMETRY"))return"Geometry";if(u.includes("DIGITAL BUS"))return"Digital Bus";if(u.includes("CHORUS"))return"Chorus";if(u.includes("AP WORLD HIST"))return"World Hist";if(u.includes("STUDY HALL"))return"Study Hall";return s||"Canvas";}
+const DIRECTORY_URL="https://acperry.browardschools.com/directory-test";
+const directoryEmailCache=new Map();
+function validEmail(v){return /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(String(v||"").trim());}
+function directoryNameParts(value){
+  const name=String(value||"").replace(/\s+/g," ").trim();
+  if(!name)return{first:"",last:""};
+  if(name.includes(",")){
+    const [lastPart,firstPart=""]=name.split(",",2);
+    return{first:firstPart.trim().split(/\s+/)[0]||"",last:lastPart.trim()};
+  }
+  const parts=name.split(/\s+/).filter(Boolean);
+  if(parts.length<2)return{first:"",last:parts[0]||""};
+  const suffix=/^(?:jr\.?|sr\.?|ii|iii|iv)$/i.test(parts.at(-1)||"");
+  return{first:parts[0],last:suffix?parts.slice(-2).join(" "):parts.at(-1)};
+}
+async function browardDirectoryEmail(name){
+  const key=String(name||"").replace(/\s+/g," ").trim().toLowerCase();
+  if(!key)return"";
+  if(directoryEmailCache.has(key))return directoryEmailCache.get(key);
+  let result="";
+  try{
+    const parts=directoryNameParts(name);
+    const url=new URL(DIRECTORY_URL);
+    url.searchParams.set("utf8","✓");
+    url.searchParams.set("const_search_role_ids","1");
+    url.searchParams.set("const_search_group_ids","");
+    url.searchParams.set("const_search_keyword","");
+    url.searchParams.set("const_search_first_name",parts.first);
+    url.searchParams.set("const_search_last_name",parts.last);
+    url.searchParams.set("const_search_department","");
+    const response=await fetch(url,{headers:{"user-agent":"Mozilla/5.0 school-dashboard-contact-resolver"}});
+    if(response.ok){
+      const html=await response.text();
+      const emails=[...new Set((html.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig)||[])
+        .map(x=>x.trim())
+        .filter(x=>/@(?:browardschools\.com|browardcountyschools\.onmicrosoft\.com)$/i.test(x)))];
+      if(emails.length===1)result=emails[0];
+      else if(emails.length>1){
+        const first=String(parts.first||"").toLowerCase();
+        const last=String(parts.last||"").replace(/\s+(?:jr\.?|sr\.?|ii|iii|iv)$/i,"").toLowerCase();
+        const lower=html.toLowerCase();
+        const matches=emails.filter(email=>{
+          const idx=lower.indexOf(email.toLowerCase());
+          if(idx<0)return false;
+          const window=lower.slice(Math.max(0,idx-1600),Math.min(lower.length,idx+500));
+          return (!first||window.includes(first))&&(!last||window.includes(last));
+        });
+        if(matches.length===1)result=matches[0];
+      }
+    }
+  }catch{}
+  directoryEmailCache.set(key,result);
+  return result;
+}
 async function readJSON(path,fallback){try{return JSON.parse(await fs.readFile(path,"utf8"));}catch{return fallback;}}
 async function gotoSafe(page,url,timeout=18000){try{await page.goto(url,{waitUntil:"domcontentloaded",timeout});}catch(e){const t=String(e||"");if(!t.includes("ERR_ABORTED")&&!t.includes("Navigation interrupted")&&!t.includes("interrupted by another navigation"))throw e;await sleep(900);}}
 async function submitSAML(page,name){try{return await page.evaluate(n=>{const i=document.querySelector(`input[name="${n}"]`);if(!i?.form)return false;setTimeout(()=>HTMLFormElement.prototype.submit.call(i.form),30);return true;},name);}catch{return false;}}
@@ -372,7 +426,13 @@ try{
   if(canvasMeta.firstName)data.studentName=canvasMeta.firstName;
   if(Array.isArray(data.grades)&&Array.isArray(canvasMeta.teacherContacts)&&canvasMeta.teacherContacts.length){
     const normalizeCourse=value=>String(cleanCourse(value)||"").toLowerCase().replace(/\s+/g," ").trim();
-    const emailOk=value=>/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(String(value||"").trim());
+    const emailOk=value=>validEmail(value);
+    await Promise.all(canvasMeta.teacherContacts.map(async contact=>{
+      if(!emailOk(contact?.email)&&contact?.name){
+        const resolved=await browardDirectoryEmail(contact.name);
+        if(emailOk(resolved))contact.email=resolved;
+      }
+    }));
     for(const grade of data.grades){
       const key=normalizeCourse(grade.course);
       let candidates=canvasMeta.teacherContacts.filter(contact=>{
