@@ -374,9 +374,13 @@ async function snapshot(page, stage) {
 
 function parseCourseRows(rows, schoolYear) {
   const gradePattern = /^(?:NG|[0-9]{1,3}%\s*[A-F][+-]?|[A-F][+-]?)$/i;
+  const emailPattern = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
   const courses = [];
 
-  for (const row of rows) {
+  for (const rawRow of rows) {
+    const row = Array.isArray(rawRow) ? rawRow : (Array.isArray(rawRow?.cells) ? rawRow.cells : []);
+    const cellEmails = Array.isArray(rawRow?.cellEmails) ? rawRow.cellEmails : [];
+    const rowEmails = Array.isArray(rawRow?.emails) ? rawRow.emails : [];
     const yi = row.indexOf(schoolYear);
     if (yi === -1) continue;
 
@@ -384,6 +388,10 @@ function parseCourseRows(rows, schoolYear) {
     const courseId = row[yi + 4] || "";
     const course = row[yi + 5] || "";
     const teacher = row[yi + 6] || "";
+    const teacherCellEmails = Array.isArray(cellEmails[yi + 6]) ? cellEmails[yi + 6] : [];
+    const teacherEmail = [...teacherCellEmails, ...rowEmails]
+      .map(value => String(value || "").trim())
+      .find(value => emailPattern.test(value)) || "";
     if (!course) continue;
 
     const gradeTokens = row
@@ -397,6 +405,7 @@ function parseCourseRows(rows, schoolYear) {
       period,
       course,
       teacher,
+      teacherEmail,
       latest,
       gradeTokens
     });
@@ -411,12 +420,36 @@ async function scrapeGradesFromCurrentDocumentTree(page) {
   for (const frame of page.frames()) {
     let rows = [];
     try {
-      rows = await frame.evaluate(year =>
-        [...document.querySelectorAll("tr")]
-          .map(tr => [...tr.querySelectorAll("th,td")].map(cell => String(cell.innerText || "").trim()))
-          .filter(row => row.includes(year)),
-        schoolYear
-      );
+      rows = await frame.evaluate(year => {
+        const emailRe = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig;
+        const collect = root => {
+          const found = new Set();
+          const add = value => {
+            const matches = String(value || "").match(emailRe) || [];
+            for (const match of matches) found.add(match);
+          };
+          for (const el of [root, ...root.querySelectorAll("*")]) {
+            add(el.textContent);
+            add(el.getAttribute?.("href"));
+            add(el.getAttribute?.("data-email"));
+            add(el.getAttribute?.("data-user-email"));
+            add(el.getAttribute?.("title"));
+            add(el.getAttribute?.("onclick"));
+          }
+          return [...found];
+        };
+        return [...document.querySelectorAll("tr")]
+          .map(tr => {
+            const cells = [...tr.querySelectorAll("th,td")];
+            const values = cells.map(cell => String(cell.innerText || "").trim());
+            return {
+              cells: values,
+              cellEmails: cells.map(cell => collect(cell)),
+              emails: collect(tr)
+            };
+          })
+          .filter(row => row.cells.includes(year));
+      }, schoolYear);
     } catch {}
 
     const courses = parseCourseRows(rows, schoolYear);
@@ -647,6 +680,7 @@ function buildDashboardGrades(courses, oldData) {
       period: String(course.period || "").trim(),
       day: classDay(course.period),
       teacher: String(course.teacher || "").trim(),
+      teacherEmail: String(course.teacherEmail || "").trim(),
       display: course.latest || "NG",
       percent: parsed.percent,
       letter: parsed.letter,
