@@ -87,6 +87,110 @@ async function browardDirectoryEmail(name){
   directoryEmailCache.set(key,result);
   return result;
 }
+
+function directorySortKey(value){
+  const parts=directoryNameParts(value);
+  const norm=s=>String(s||"").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g," ").trim();
+  return `${norm(parts.last)}|${norm(parts.first)}`;
+}
+function sameDirectoryPerson(a,b){
+  const pa=directoryNameParts(a),pb=directoryNameParts(b);
+  const norm=s=>String(s||"").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g," ").trim();
+  const al=norm(pa.last),bl=norm(pb.last),af=norm(pa.first),bf=norm(pb.first);
+  if(!al||!bl||al!==bl)return false;
+  if(!af||!bf)return true;
+  return af===bf||af.startsWith(bf)||bf.startsWith(af);
+}
+const directoryPageCache=new Map();
+async function directoryEntries(page,pageNumber){
+  if(directoryPageCache.has(pageNumber))return directoryPageCache.get(pageNumber);
+  const url=`${DIRECTORY_URL}?const_page=${pageNumber}`;
+  let entries=[];
+  try{
+    await gotoSafe(page,url,12000);
+    await sleep(650);
+    entries=await page.evaluate(()=>{
+      const clean=v=>String(v||"").replace(/\s+/g," ").trim();
+      const emailRe=/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig;
+      const allowed=e=>/@(?:browardschools\.com|browardcountyschools\.onmicrosoft\.com)$/i.test(e);
+      const blocks=[...document.querySelectorAll('.fsConstituentItem,[class*="ConstituentItem"],[class*="constituentItem"]')];
+      const parseBlock=block=>{
+        const nameEl=block.querySelector('.fsFullName,[class*="FullName"],[class*="fullName"],h2,h3,h4');
+        const name=clean(nameEl?.textContent||"");
+        const emails=[];
+        for(const a of block.querySelectorAll('a[href^="mailto:"]')){
+          const e=String(a.getAttribute("href")||"").replace(/^mailto:/i,"").split(/[?;]/)[0].trim();
+          if(allowed(e))emails.push(e);
+        }
+        if(!emails.length){
+          const matches=String(block.innerText||block.textContent||"").match(emailRe)||[];
+          for(const e of matches)if(allowed(e))emails.push(e);
+        }
+        return {name,email:[...new Set(emails)][0]||""};
+      };
+      let out=blocks.map(parseBlock).filter(x=>x.name);
+      if(!out.length){
+        const heads=[...document.querySelectorAll("h2,h3,h4")];
+        out=heads.map(h=>{
+          let box=h.parentElement;
+          for(let i=0;i<5&&box;i++,box=box.parentElement){
+            const text=String(box.innerText||"");
+            if(/\bEmail\s*:/i.test(text)){
+              const mails=[...box.querySelectorAll('a[href^="mailto:"]')].map(a=>String(a.getAttribute("href")||"").replace(/^mailto:/i,"").split(/[?;]/)[0].trim()).filter(allowed);
+              const matches=text.match(emailRe)||[];
+              return {name:clean(h.textContent),email:mails[0]||matches.find(allowed)||""};
+            }
+          }
+          return null;
+        }).filter(Boolean);
+      }
+      const seen=new Set();
+      return out.filter(x=>{
+        const key=String(x.name||"").toLowerCase();
+        if(!key||seen.has(key))return false;
+        seen.add(key);
+        return true;
+      });
+    }).catch(()=>[]);
+  }catch{}
+  directoryPageCache.set(pageNumber,entries);
+  return entries;
+}
+async function browardDirectoryEmailBrowser(page,name){
+  const cacheKey=`browser:${String(name||"").toLowerCase().trim()}`;
+  if(directoryEmailCache.has(cacheKey))return directoryEmailCache.get(cacheKey);
+  const targetKey=directorySortKey(name);
+  let low=1,high=261,result="";
+  const checked=new Set();
+  for(let attempt=0;attempt<10&&low<=high;attempt++){
+    const mid=Math.floor((low+high)/2);
+    checked.add(mid);
+    const entries=await directoryEntries(page,mid);
+    if(!entries.length){break}
+    const exact=entries.find(x=>sameDirectoryPerson(x.name,name));
+    if(exact){
+      result=validEmail(exact.email)?exact.email:"";
+      break;
+    }
+    const firstKey=directorySortKey(entries[0]?.name);
+    const lastKey=directorySortKey(entries.at(-1)?.name);
+    if(targetKey<firstKey)high=mid-1;
+    else if(targetKey>lastKey)low=mid+1;
+    else{
+      for(const neighbor of [mid-1,mid+1]){
+        if(neighbor<1||neighbor>261||checked.has(neighbor))continue;
+        const nearby=await directoryEntries(page,neighbor);
+        const hit=nearby.find(x=>sameDirectoryPerson(x.name,name));
+        if(hit&&validEmail(hit.email)){result=hit.email;break}
+      }
+      break;
+    }
+  }
+  console.log(`[DIRECTORY-BROWSER] ${name}: resolved=${Boolean(result)}`);
+  directoryEmailCache.set(cacheKey,result);
+  return result;
+}
+
 async function readJSON(path,fallback){try{return JSON.parse(await fs.readFile(path,"utf8"));}catch{return fallback;}}
 async function gotoSafe(page,url,timeout=18000){try{await page.goto(url,{waitUntil:"domcontentloaded",timeout});}catch(e){const t=String(e||"");if(!t.includes("ERR_ABORTED")&&!t.includes("Navigation interrupted")&&!t.includes("interrupted by another navigation"))throw e;await sleep(900);}}
 async function submitSAML(page,name){try{return await page.evaluate(n=>{const i=document.querySelector(`input[name="${n}"]`);if(!i?.form)return false;setTimeout(()=>HTMLFormElement.prototype.submit.call(i.form),30);return true;},name);}catch{return false;}}
@@ -400,6 +504,25 @@ try{
   if(!(await ensureCanvas(page)))throw new Error("Canvas authentication timed out.");
   const canvasMeta=await canvasIdentityAndActivity(page);
   if(canvasMeta.firstName)log(`Canvas identified student first name as ${canvasMeta.firstName}.`);
+  if(Array.isArray(canvasMeta.teacherContacts)&&canvasMeta.teacherContacts.some(contact=>!validEmail(contact?.email)&&contact?.name)){
+    const directoryPage=await context.newPage();
+    try{
+      const uniqueNames=[...new Set(canvasMeta.teacherContacts.filter(contact=>!validEmail(contact?.email)&&contact?.name).map(contact=>String(contact.name).trim()))];
+      const resolved=new Map();
+      for(const name of uniqueNames){
+        const email=await browardDirectoryEmailBrowser(directoryPage,name);
+        if(validEmail(email))resolved.set(name.toLowerCase(),email);
+      }
+      for(const contact of canvasMeta.teacherContacts){
+        if(!validEmail(contact?.email)&&contact?.name){
+          const email=resolved.get(String(contact.name).trim().toLowerCase())||"";
+          if(validEmail(email))contact.email=email;
+        }
+      }
+    }finally{
+      await directoryPage.close().catch(()=>{});
+    }
+  }
   if(!(await openAgenda(page)))throw new Error("Canvas Agenda did not load.");
   const body=await page.locator("body").innerText().catch(()=>"");
   const raw=parseAgenda(body);
@@ -432,12 +555,6 @@ try{
   if(Array.isArray(data.grades)&&Array.isArray(canvasMeta.teacherContacts)&&canvasMeta.teacherContacts.length){
     const normalizeCourse=value=>String(cleanCourse(value)||"").toLowerCase().replace(/\s+/g," ").trim();
     const emailOk=value=>validEmail(value);
-    await Promise.all(canvasMeta.teacherContacts.map(async contact=>{
-      if(!emailOk(contact?.email)&&contact?.name){
-        const resolved=await browardDirectoryEmail(contact.name);
-        if(emailOk(resolved))contact.email=resolved;
-      }
-    }));
     for(const grade of data.grades){
       const key=normalizeCourse(grade.course);
       let candidates=canvasMeta.teacherContacts.filter(contact=>{
