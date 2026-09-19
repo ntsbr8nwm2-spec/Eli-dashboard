@@ -55,6 +55,32 @@ function dashboardDateLabel() {
   }).format(new Date());
 }
 
+function currentSchoolDay() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short"
+  }).formatToParts(new Date());
+
+  const year = Number(parts.find(p => p.type === "year")?.value);
+  const month = Number(parts.find(p => p.type === "month")?.value);
+  const day = Number(parts.find(p => p.type === "day")?.value);
+  const weekday = parts.find(p => p.type === "weekday")?.value || "";
+
+  if (weekday === "Mon" || weekday === "Wed") return "A";
+  if (weekday === "Tue" || weekday === "Thu") return "B";
+  if (weekday === "Fri") {
+    // Coral Glades alternates Friday block days. Sep 18, 2026 is an A day.
+    const anchor = Date.UTC(2026, 8, 18);
+    const current = Date.UTC(year, month - 1, day);
+    const weeks = Math.round((current - anchor) / (7 * 24 * 60 * 60 * 1000));
+    return ((weeks % 2) + 2) % 2 === 0 ? "A" : "B";
+  }
+  return "";
+}
+
 function cleanCourseName(value) {
   const original = String(value || "").trim();
   const upper = original.toUpperCase();
@@ -620,6 +646,7 @@ function buildDashboardGrades(courses, oldData) {
       course: name,
       period: String(course.period || "").trim(),
       day: classDay(course.period),
+      teacher: String(course.teacher || "").trim(),
       display: course.latest || "NG",
       percent: parsed.percent,
       letter: parsed.letter,
@@ -636,6 +663,7 @@ async function writeDashboard(current, gpa = {}) {
 
   const data = {
     dateLabel: dashboardDateLabel(),
+    schoolDay: currentSchoolDay(),
     gpa: gpa.cumulativeGpa || old.gpa || null,
     weightedGpa: gpa.weightedGpa || old.weightedGpa || null,
     updatedAt: new Date().toISOString(),
