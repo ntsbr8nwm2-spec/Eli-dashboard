@@ -71,6 +71,15 @@ function cleanCourseName(value) {
   return original;
 }
 
+function classDay(period) {
+  const text = String(period || "").trim().toUpperCase();
+  if (/\bA\b/.test(text) || /(?:^|[^A-Z])A(?:[^A-Z]|$)/.test(text)) return "A";
+  if (/\bB\b/.test(text) || /(?:^|[^A-Z])B(?:[^A-Z]|$)/.test(text)) return "B";
+  const n = Number((text.match(/\d+/) || [])[0]);
+  if (Number.isInteger(n) && n >= 1 && n <= 8) return n % 2 ? "A" : "B";
+  return "";
+}
+
 function gradeParts(value) {
   const text = String(value || "").trim();
   const pct = text.match(/(\d{1,3})%/);
@@ -609,6 +618,8 @@ function buildDashboardGrades(courses, oldData) {
 
     return {
       course: name,
+      period: String(course.period || "").trim(),
+      day: classDay(course.period),
       display: course.latest || "NG",
       percent: parsed.percent,
       letter: parsed.letter,
