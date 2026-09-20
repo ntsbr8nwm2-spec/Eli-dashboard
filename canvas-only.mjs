@@ -281,6 +281,15 @@ async function canvasIdentityAndActivity(page){
       };
       const activeCourses=Array.isArray(courses)?courses.filter(c=>c?.id!=null&&courseCurrent(c)):[];
       const allowedCourseIds=new Set(activeCourses.map(c=>String(c.id)));
+      const accountIds=[...new Set(activeCourses.map(c=>c?.account_id).filter(id=>id!=null).map(String))];
+      const accountNames={};
+      for(const accountId of accountIds){
+        const account=await get(`/api/v1/accounts/${encodeURIComponent(accountId)}`);
+        const label=clean(account?.name||account?.default_time_zone||"");
+        if(label)accountNames[accountId]=label;
+      }
+      const schoolCandidates=[...new Set(activeCourses.map(c=>accountNames[String(c?.account_id)]||"").filter(Boolean))];
+      const schoolName=schoolCandidates.length===1?schoolCandidates[0]:"";
       const courseMap={};
       for(const c of activeCourses){
         const label=clean(c?.name||c?.course_code||"");
@@ -484,10 +493,10 @@ async function canvasIdentityAndActivity(page){
         }
       }
       activity.sort((a,b)=>(activityTimes[b]||0)-(activityTimes[a]||0));
-      return {firstName,activity,teacherContacts};
+      return {firstName,activity,teacherContacts,schoolName,schoolCandidates};
     });
   }catch{
-    return {firstName:"",activity:[],teacherContacts:[]};
+    return {firstName:"",activity:[],teacherContacts:[],schoolName:"",schoolCandidates:[]};
   }
 }
 
@@ -504,6 +513,8 @@ try{
   if(!(await ensureCanvas(page)))throw new Error("Canvas authentication timed out.");
   const canvasMeta=await canvasIdentityAndActivity(page);
   if(canvasMeta.firstName)log(`Canvas identified student first name as ${canvasMeta.firstName}.`);
+  if(canvasMeta.schoolName)log(`Canvas school context: ${canvasMeta.schoolName}.`);
+  else if(Array.isArray(canvasMeta.schoolCandidates)&&canvasMeta.schoolCandidates.length)log(`Canvas school candidates: ${canvasMeta.schoolCandidates.join(" | ")}.`);
   if(Array.isArray(canvasMeta.teacherContacts)&&canvasMeta.teacherContacts.some(contact=>!validEmail(contact?.email)&&contact?.name)){
     const directoryPage=await context.newPage();
     try{
@@ -552,6 +563,8 @@ try{
   if(!data)throw new Error("data.json could not be read.");
   data.assignments=assignments;
   if(canvasMeta.firstName)data.studentName=canvasMeta.firstName;
+  if(canvasMeta.schoolName)data.schoolName=canvasMeta.schoolName;
+  if(Array.isArray(canvasMeta.schoolCandidates)&&canvasMeta.schoolCandidates.length)data.schoolCandidates=canvasMeta.schoolCandidates;
   if(Array.isArray(data.grades)&&Array.isArray(canvasMeta.teacherContacts)&&canvasMeta.teacherContacts.length){
     const normalizeCourse=value=>String(cleanCourse(value)||"").toLowerCase().replace(/\s+/g," ").trim();
     const emailOk=value=>validEmail(value);
