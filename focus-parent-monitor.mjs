@@ -257,16 +257,37 @@ async function readData() { try { return JSON.parse(await fs.readFile(DATA_PATH,
 
 async function writeGrades(courses) {
   const old = await readData();
-  const oldBy = new Map((Array.isArray(old.grades) ? old.grades : []).map(x => [String(x.course || "").toLowerCase(), x]));
+  const oldGrades = Array.isArray(old.grades) ? old.grades : [];
+  const oldExact = new Map(oldGrades.map(x => [
+    `${String(x.course || "").trim().toLowerCase()}|${String(x.teacher || "").trim().toLowerCase()}`,
+    x
+  ]));
+  const oldByCourse = new Map();
+  for (const item of oldGrades) {
+    const key = String(item.course || "").trim().toLowerCase();
+    const list = oldByCourse.get(key) || [];
+    list.push(item);
+    oldByCourse.set(key, list);
+  }
   let changes = 0;
   const grades = courses.map(c => {
     const name = String(c.course || "").trim();
+    const teacher = String(c.teacher || "").trim();
     const parsed = gradeParts(c.latest);
-    const prior = oldBy.get(name.toLowerCase());
+    const courseKey = name.toLowerCase();
+    const exactKey = `${courseKey}|${teacher.toLowerCase()}`;
+    const sameCourse = oldByCourse.get(courseKey) || [];
+    const prior = oldExact.get(exactKey) || (sameCourse.length === 1 ? sameCourse[0] : undefined);
+    const freshEmail = String(c.teacherEmail || "").trim();
+    const preservedEmail =
+      prior && String(prior.teacher || "").trim().toLowerCase() === teacher.toLowerCase()
+        ? String(prior.teacherEmail || "").trim()
+        : "";
+    const teacherEmail = freshEmail || preservedEmail;
     let change = "";
     if (!prior) { change = "NEW"; changes++; }
     else if ((prior.percent ?? null) !== parsed.percent || String(prior.letter || "NG") !== parsed.letter) { change = "CHANGED"; changes++; }
-    return { course: name, period: String(c.period || "").trim(), day: classDay(c.period), teacher: String(c.teacher || "").trim(), teacherEmail: String(c.teacherEmail || "").trim(), display: c.latest || "NG", percent: parsed.percent, letter: parsed.letter, change };
+    return { course: name, period: String(c.period || "").trim(), day: classDay(c.period), teacher, teacherEmail, display: c.latest || "NG", percent: parsed.percent, letter: parsed.letter, change };
   });
 
   const data = {
