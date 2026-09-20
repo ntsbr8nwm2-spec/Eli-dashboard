@@ -651,16 +651,36 @@ async function readDashboard() {
 }
 
 function buildDashboardGrades(courses, oldData) {
-  const oldByCourse = new Map(
-    (Array.isArray(oldData.grades) ? oldData.grades : []).map(item => [String(item.course || ""), item])
+  const oldGrades = Array.isArray(oldData.grades) ? oldData.grades : [];
+  const oldExact = new Map(
+    oldGrades.map(item => [
+      `${String(item.course || "")}|${String(item.teacher || "").trim().toLowerCase()}`,
+      item
+    ])
   );
+  const oldByCourse = new Map();
+  for (const item of oldGrades) {
+    const key = String(item.course || "");
+    const list = oldByCourse.get(key) || [];
+    list.push(item);
+    oldByCourse.set(key, list);
+  }
 
   let changeCount = 0;
 
   const grades = courses.map(course => {
     const name = cleanCourseName(course.course);
     const parsed = gradeParts(course.latest);
-    const old = oldByCourse.get(name);
+    const teacher = String(course.teacher || "").trim();
+    const exactKey = `${name}|${teacher.toLowerCase()}`;
+    const sameCourse = oldByCourse.get(name) || [];
+    const old = oldExact.get(exactKey) || (sameCourse.length === 1 ? sameCourse[0] : undefined);
+    const freshEmail = String(course.teacherEmail || "").trim();
+    const preservedEmail =
+      old && String(old.teacher || "").trim().toLowerCase() === teacher.toLowerCase()
+        ? String(old.teacherEmail || "").trim()
+        : "";
+    const teacherEmail = freshEmail || preservedEmail;
     let change = "";
 
     if (old) {
@@ -679,8 +699,8 @@ function buildDashboardGrades(courses, oldData) {
       course: name,
       period: String(course.period || "").trim(),
       day: classDay(course.period),
-      teacher: String(course.teacher || "").trim(),
-      teacherEmail: String(course.teacherEmail || "").trim(),
+      teacher,
+      teacherEmail,
       display: course.latest || "NG",
       percent: parsed.percent,
       letter: parsed.letter,
