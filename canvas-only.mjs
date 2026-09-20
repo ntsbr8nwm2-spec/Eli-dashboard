@@ -108,51 +108,68 @@ async function directoryEntries(page,pageNumber){
   let entries=[];
   try{
     await gotoSafe(page,url,12000);
-    await sleep(650);
+    await page.waitForFunction(
+      () => /Email\s*:/i.test(document.body?.innerText||""),
+      {timeout:6500}
+    ).catch(()=>{});
+    await sleep(500);
     entries=await page.evaluate(()=>{
       const clean=v=>String(v||"").replace(/\s+/g," ").trim();
-      const emailRe=/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig;
-      const allowed=e=>/@(?:browardschools\.com|browardcountyschools\.onmicrosoft\.com)$/i.test(e);
-      const blocks=[...document.querySelectorAll('.fsConstituentItem,[class*="ConstituentItem"],[class*="constituentItem"]')];
-      const parseBlock=block=>{
-        const nameEl=block.querySelector('.fsFullName,[class*="FullName"],[class*="fullName"],h2,h3,h4');
-        const name=clean(nameEl?.textContent||"");
-        const emails=[];
-        for(const a of block.querySelectorAll('a[href^="mailto:"]')){
-          const e=String(a.getAttribute("href")||"").replace(/^mailto:/i,"").split(/[?;]/)[0].trim();
-          if(allowed(e))emails.push(e);
+      const emailRe=/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
+      const allowed=e=>/@(?:browardschools\.com|browardcountyschools\.onmicrosoft\.com)$/i.test(String(e||"").trim());
+      const out=[];
+
+      // First choice: derive the person's name from the DOM around each published email link.
+      for(const a of document.querySelectorAll('a[href^="mailto:"]')){
+        const email=String(a.getAttribute("href")||"").replace(/^mailto:/i,"").split(/[?;]/)[0].trim();
+        if(!allowed(email))continue;
+        let name="";
+        let box=a;
+        for(let depth=0;box&&depth<9;depth++,box=box.parentElement){
+          const named=box.querySelector?.('.fsFullName,[class*="FullName"],[class*="fullName"],h2,h3,h4,h5');
+          const candidate=clean(named?.textContent||"");
+          if(candidate&&!/^(Constituent|Directory Test)$/i.test(candidate)){name=candidate;break}
         }
-        if(!emails.length){
-          const matches=String(block.innerText||block.textContent||"").match(emailRe)||[];
-          for(const e of matches)if(allowed(e))emails.push(e);
-        }
-        return {name,email:[...new Set(emails)][0]||""};
-      };
-      let out=blocks.map(parseBlock).filter(x=>x.name);
-      if(!out.length){
-        const heads=[...document.querySelectorAll("h2,h3,h4")];
-        out=heads.map(h=>{
-          let box=h.parentElement;
-          for(let i=0;i<5&&box;i++,box=box.parentElement){
-            const text=String(box.innerText||"");
-            if(/\bEmail\s*:/i.test(text)){
-              const mails=[...box.querySelectorAll('a[href^="mailto:"]')].map(a=>String(a.getAttribute("href")||"").replace(/^mailto:/i,"").split(/[?;]/)[0].trim()).filter(allowed);
-              const matches=text.match(emailRe)||[];
-              return {name:clean(h.textContent),email:mails[0]||matches.find(allowed)||""};
-            }
-          }
-          return null;
-        }).filter(Boolean);
+        if(name)out.push({name,email});
       }
+
+      // Finalsite sometimes renders the address as text instead of a mailto link.
+      // Parse the visible lines around each email address in that case.
+      if(!out.length){
+        const lines=String(document.body?.innerText||"").split(/\n+/).map(clean).filter(Boolean);
+        const label=/^(?:Email:?|Titles?:|Departments?:|Phone Numbers?:|School:?|Constituent|Image|previous page|next page|showing\b)/i;
+        const looksName=value=>{
+          if(!value||label.test(value)||emailRe.test(value))return false;
+          if(/^\(?\d{3}\)?[\s\d-]{7,}$/.test(value))return false;
+          if(value.length>90)return false;
+          const words=value.split(/\s+/).filter(Boolean);
+          return words.length>=2&&words.length<=8&&/[A-Za-z]/.test(value);
+        };
+        for(let i=0;i<lines.length;i++){
+          const match=lines[i].match(emailRe);
+          if(!match||!allowed(match[0]))continue;
+          let name="";
+          for(let j=i-1;j>=Math.max(0,i-12);j--){
+            if(looksName(lines[j])){name=lines[j];break}
+          }
+          if(name)out.push({name,email:match[0]});
+        }
+      }
+
       const seen=new Set();
       return out.filter(x=>{
-        const key=String(x.name||"").toLowerCase();
-        if(!key||seen.has(key))return false;
+        const key=`${String(x.name||"").toLowerCase()}|${String(x.email||"").toLowerCase()}`;
+        if(!x.name||!allowed(x.email)||seen.has(key))return false;
         seen.add(key);
         return true;
       });
     }).catch(()=>[]);
   }catch{}
+  if(entries.length){
+    console.log(`[DIRECTORY-PAGE] page=${pageNumber} entries=${entries.length} first=${entries[0]?.name||""} last=${entries.at(-1)?.name||""}`);
+  }else{
+    console.log(`[DIRECTORY-PAGE] page=${pageNumber} entries=0`);
+  }
   directoryPageCache.set(pageNumber,entries);
   return entries;
 }
