@@ -31,8 +31,54 @@ function activityCategory(line){const s=String(line||'');if(s.includes('Current 
 function activityCourse(line){const s=String(line||'');const i=s.indexOf(' — ');return i>0?s.slice(0,i).trim():'Other'}
 function activityDetail(line){const s=String(line||'');const i=s.indexOf(' — ');return i>0?s.slice(i+3).trim():s}
 function validTeacherEmail(value){const s=String(value||'').trim();return /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(s)?s:''}
-function courseKey(value){const c=String(value||'').toLowerCase();if(c.includes('anat physio')||c.includes('anatomy'))return'anatomy';if(c.includes('biology 1 hon')||c==='biology'||c.includes('biology-'))return'biology';if(c.includes('aice eng lang')||c==='english'||c.includes('english-'))return'english';if(c.includes('eng hon 2'))return'eng hon 2';if(c.includes('geometry'))return'geometry';if(c.includes('tv production'))return'tv production tech 1';if(c.includes('chorus'))return'chorus';if(c.includes('ap world hist')||c.includes('world hist'))return'world hist';if(c.includes('study hall'))return'study hall';return c.replace(/\s+/g,' ').trim()}
-function teacherContactForCourse(course,grades){const key=courseKey(course);const list=(Array.isArray(grades)?grades:[]).filter(g=>courseKey(g.course)===key);if(!list.length)return null;const low=String(course||'').toLowerCase();const exact=list.find(g=>{const last=String(g.teacher||'').split(',')[0].trim().toLowerCase();return last&&low.includes(last)});return exact||list.find(g=>validTeacherEmail(g.teacherEmail))||list[0]}
+function normWords(value){return String(value||'').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,' ').replace(/\b20\d{2}\b/g,' ').replace(/\s+/g,' ').trim()}
+function teacherSurname(value){return normWords(String(value||'').split(',')[0])}
+function activityTeacherHint(value){
+  const raw=String(value||'').trim();
+  const possessive=raw.match(/\b(?:mr|mrs|ms|dr)\.?\s+([A-Za-z][A-Za-z.'’-]*(?:\s+(?:jr\.?|sr\.?|ii|iii|iv))?)['’]s\b/i);
+  if(possessive)return normWords(possessive[1]);
+  const suffix=raw.match(/[-–—]\s*([A-Za-z][A-Za-z.'’-]*(?:\s+(?:jr\.?|sr\.?|ii|iii|iv))?)\s*$/i);
+  return suffix?normWords(suffix[1]):'';
+}
+function genericCourseKey(value){
+  let s=String(value||'');
+  s=s.replace(/\b(?:fall|spring)\s+20\d{2}\s*:\s*/ig,'');
+  s=s.replace(/^\s*per\.?\s*[\d& ,/-]+\s*/i,'');
+  s=s.replace(/[-–—]\s*[A-Za-z][A-Za-z.'’-]*(?:\s+(?:jr\.?|sr\.?|ii|iii|iv))?\s*$/i,'');
+  s=s.replace(/\b20\d{2}\s*[-–—/]\s*20\d{2}\b/g,'');
+  return normWords(s).replace(/\b(?:m j|hon|as)\b/g,' ').replace(/\s+/g,' ').trim();
+}
+function teacherContactForCourse(course,grades){
+  const all=Array.isArray(grades)?grades:[];
+  const hint=activityTeacherHint(course);
+  if(hint){
+    const byTeacher=all.filter(g=>teacherSurname(g.teacher)===hint);
+    const withEmail=byTeacher.filter(g=>validTeacherEmail(g.teacherEmail));
+    if(withEmail.length)return withEmail[0];
+    if(byTeacher.length)return byTeacher[0];
+  }
+
+  const key=genericCourseKey(course);
+  if(!key)return null;
+  const exact=all.filter(g=>genericCourseKey(g.course)===key);
+  if(exact.length===1)return exact[0];
+  const exactEmail=exact.find(g=>validTeacherEmail(g.teacherEmail));
+  if(exactEmail)return exactEmail;
+
+  const targetTokens=new Set(key.split(' ').filter(x=>x.length>1));
+  let best=null,bestScore=0,tied=false;
+  for(const g of all){
+    const gKey=genericCourseKey(g.course);
+    const tokens=new Set(gKey.split(' ').filter(x=>x.length>1));
+    if(!tokens.size||!targetTokens.size)continue;
+    let overlap=0;
+    for(const token of targetTokens)if(tokens.has(token))overlap++;
+    const score=overlap/Math.max(targetTokens.size,tokens.size);
+    if(score>bestScore){best=g;bestScore=score;tied=false}
+    else if(score===bestScore&&score>0)tied=true;
+  }
+  return bestScore>=0.6&&!tied?best:null;
+}
 function failingSubmission(line){if(activityCategory(line)!=='Submissions')return false;const grade=String(line).split('Current grade:')[1]||'';const pct=grade.match(/(-?\d+(?:\.\d+)?)%/);if(pct&&Number(pct[1])<70)return true;return/(?:^|[·\s])F[+-]?(?:$|[·\s])/i.test(grade)}
 function renderActivity(activity,grades){
   if(!activity.length)return '<div class="empty">Nothing new</div>';
