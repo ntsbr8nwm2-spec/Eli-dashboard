@@ -174,40 +174,88 @@ async function directoryEntries(page,pageNumber){
   return entries;
 }
 async function browardDirectoryEmailBrowser(page,name){
-  const cacheKey=`browser:${String(name||"").toLowerCase().trim()}`;
+  const cacheKey=`search:${String(name||"").toLowerCase().trim()}`;
   if(directoryEmailCache.has(cacheKey))return directoryEmailCache.get(cacheKey);
-  const targetKey=directorySortKey(name);
-  let low=1,high=261,result="";
-  const checked=new Set();
-  for(let attempt=0;attempt<10&&low<=high;attempt++){
-    const mid=Math.floor((low+high)/2);
-    checked.add(mid);
-    const entries=await directoryEntries(page,mid);
-    if(!entries.length){break}
-    const exact=entries.find(x=>sameDirectoryPerson(x.name,name));
-    if(exact){
-      result=validEmail(exact.email)?exact.email:"";
-      break;
-    }
-    const firstKey=directorySortKey(entries[0]?.name);
-    const lastKey=directorySortKey(entries.at(-1)?.name);
-    if(targetKey<firstKey)high=mid-1;
-    else if(targetKey>lastKey)low=mid+1;
-    else{
-      for(const neighbor of [mid-1,mid+1]){
-        if(neighbor<1||neighbor>261||checked.has(neighbor))continue;
-        const nearby=await directoryEntries(page,neighbor);
-        const hit=nearby.find(x=>sameDirectoryPerson(x.name,name));
-        if(hit&&validEmail(hit.email)){result=hit.email;break}
+
+  const parts=directoryNameParts(name);
+  let result="";
+  try{
+    const url=new URL(DIRECTORY_URL);
+    url.searchParams.set("utf8","✓");
+    url.searchParams.set("const_search_group_ids","");
+    url.searchParams.set("const_search_role_ids","");
+    url.searchParams.set("const_search_keyword","");
+    url.searchParams.set("const_search_first_name",parts.first||"");
+    url.searchParams.set("const_search_last_name",parts.last||"");
+    url.searchParams.set("const_search_department","");
+    url.searchParams.set("_lookup",String(Date.now()));
+
+    await gotoSafe(page,url.toString(),15000);
+    await page.waitForFunction(
+      ({first,last})=>{
+        const text=String(document.body?.innerText||"").toLowerCase();
+        const f=String(first||"").toLowerCase();
+        const l=String(last||"").toLowerCase();
+        return (!f||text.includes(f))&&(!l||text.includes(l))&&text.includes("email");
+      },
+      {first:parts.first,last:parts.last},
+      {timeout:9000}
+    ).catch(()=>{});
+    await sleep(700);
+
+    const matches=await page.evaluate(({first,last})=>{
+      const clean=v=>String(v||"").replace(/\s+/g," ").trim();
+      const norm=v=>clean(v).toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g," ").trim();
+      const emailRe=/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig;
+      const allowed=e=>/@(?:browardschools\.com|browardcountyschools\.onmicrosoft\.com)$/i.test(String(e||"").trim());
+      const firstNorm=norm(first), lastNorm=norm(last);
+      const out=[];
+
+      const containers=[...document.querySelectorAll(
+        '.fsConstituentItem,[class*="ConstituentItem"],[class*="constituentItem"],article,li'
+      )];
+
+      for(const box of containers){
+        const text=clean(box.innerText||box.textContent||"");
+        const low=norm(text);
+        if(lastNorm&&!low.includes(lastNorm))continue;
+        if(firstNorm&&!low.includes(firstNorm))continue;
+
+        const emails=[];
+        for(const a of box.querySelectorAll('a[href^="mailto:"]')){
+          const e=String(a.getAttribute("href")||"").replace(/^mailto:/i,"").split(/[?;]/)[0].trim();
+          if(allowed(e))emails.push(e);
+        }
+        for(const e of (text.match(emailRe)||[]))if(allowed(e))emails.push(e);
+
+        const unique=[...new Set(emails)];
+        if(unique.length)out.push(...unique);
       }
-      break;
-    }
+
+      if(!out.length){
+        const body=String(document.body?.innerText||"");
+        const lines=body.split(/\n+/).map(clean).filter(Boolean);
+        for(let i=0;i<lines.length;i++){
+          const lineNorm=norm(lines[i]);
+          if(lastNorm&&!lineNorm.includes(lastNorm))continue;
+          if(firstNorm&&!lineNorm.includes(firstNorm))continue;
+          const window=lines.slice(i,Math.min(lines.length,i+12)).join(" ");
+          for(const e of (window.match(emailRe)||[]))if(allowed(e))out.push(e);
+        }
+      }
+
+      return [...new Set(out)];
+    },{first:parts.first,last:parts.last}).catch(()=>[]);
+
+    if(matches.length===1)result=matches[0];
+    console.log(`[DIRECTORY-SEARCH] ${name}: matches=${matches.length} resolved=${Boolean(result)}`);
+  }catch(error){
+    console.log(`[DIRECTORY-SEARCH] ${name}: lookup failed (${String(error?.name||"error")})`);
   }
-  console.log(`[DIRECTORY-BROWSER] ${name}: resolved=${Boolean(result)}`);
+
   directoryEmailCache.set(cacheKey,result);
   return result;
 }
-
 async function readJSON(path,fallback){try{return JSON.parse(await fs.readFile(path,"utf8"));}catch{return fallback;}}
 async function gotoSafe(page,url,timeout=18000){try{await page.goto(url,{waitUntil:"domcontentloaded",timeout});}catch(e){const t=String(e||"");if(!t.includes("ERR_ABORTED")&&!t.includes("Navigation interrupted")&&!t.includes("interrupted by another navigation"))throw e;await sleep(900);}}
 async function submitSAML(page,name){try{return await page.evaluate(n=>{const i=document.querySelector(`input[name="${n}"]`);if(!i?.form)return false;setTimeout(()=>HTMLFormElement.prototype.submit.call(i.form),30);return true;},name);}catch{return false;}}
