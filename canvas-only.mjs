@@ -31,6 +31,37 @@ function cleanCourse(v){const s=String(v||"").trim(),u=s.toUpperCase();if(u.incl
 const DIRECTORY_URL="https://acperry.browardschools.com/directory-test";
 const directoryEmailCache=new Map();
 function validEmail(v){return /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(String(v||"").trim());}
+function focusTeacherParts(value){
+  const raw=String(value||"").replace(/\s+/g," ").trim();
+  if(!raw)return{last:"",initial:""};
+  if(raw.includes(",")){
+    const [lastPart,firstPart=""]=raw.split(",",2);
+    return{
+      last:lastPart.trim(),
+      initial:(firstPart.trim().match(/[A-Za-z]/)||[""])[0].toLowerCase()
+    };
+  }
+  const parts=raw.split(/\s+/).filter(Boolean);
+  return{
+    last:parts.slice(1).join(" ")||parts[0]||"",
+    initial:(parts[0]||"").slice(0,1).toLowerCase()
+  };
+}
+function teacherIdentityMatch(contactName,focusTeacher){
+  const norm=s=>String(s||"").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g," ").trim();
+  const c=norm(contactName);
+  const parts=focusTeacherParts(focusTeacher);
+  const last=norm(parts.last);
+  if(!c||!last||!c.includes(last))return false;
+  if(!parts.initial)return true;
+  const firstWord=c.split(/\s+/)[0]||"";
+  return firstWord.startsWith(parts.initial);
+}
+function focusTeacherLookupName(value){
+  const parts=focusTeacherParts(value);
+  if(!parts.last||/^tba\d*/i.test(parts.last))return"";
+  return [parts.initial?parts.initial.toUpperCase():"",parts.last].filter(Boolean).join(" ");
+}
 function directoryNameParts(value){
   const name=String(value||"").replace(/\s+/g," ").trim();
   if(!name)return{first:"",last:""};
@@ -633,19 +664,56 @@ try{
   if(Array.isArray(data.grades)&&Array.isArray(canvasMeta.teacherContacts)&&canvasMeta.teacherContacts.length){
     const normalizeCourse=value=>String(cleanCourse(value)||"").toLowerCase().replace(/\s+/g," ").trim();
     const emailOk=value=>validEmail(value);
+
     for(const grade of data.grades){
       const key=normalizeCourse(grade.course);
-      let candidates=canvasMeta.teacherContacts.filter(contact=>{
+      const courseCandidates=canvasMeta.teacherContacts.filter(contact=>{
         const contactKey=normalizeCourse(contact.course);
         return contactKey===key||contactKey.startsWith(key+"-")||key.startsWith(contactKey+"-");
       });
-      if(!candidates.length)continue;
-      const currentTeacher=String(grade.teacher||"").trim().toLowerCase();
-      const surname=currentTeacher.split(",")[0].trim();
-      const matched=surname?candidates.find(contact=>String(contact.name||"").toLowerCase().includes(surname)):null;
-      const contact=matched||candidates.find(contact=>emailOk(contact.email))||candidates[0];
+
+      const identityCandidates=String(grade.teacher||"").trim()
+        ? canvasMeta.teacherContacts.filter(contact=>teacherIdentityMatch(contact.name,grade.teacher))
+        : [];
+
+      let contact=null;
+
+      const identityWithEmail=identityCandidates.filter(contact=>emailOk(contact.email));
+      if(identityWithEmail.length===1){
+        contact=identityWithEmail[0];
+      }else{
+        const courseIdentity=courseCandidates.filter(contact=>teacherIdentityMatch(contact.name,grade.teacher));
+        const courseIdentityWithEmail=courseIdentity.filter(contact=>emailOk(contact.email));
+        if(courseIdentityWithEmail.length===1)contact=courseIdentityWithEmail[0];
+        else if(courseCandidates.length===1)contact=courseCandidates[0];
+      }
+
+      if(!contact&&!grade.teacher&&courseCandidates.length===1)contact=courseCandidates[0];
       if(!grade.teacher&&contact?.name)grade.teacher=String(contact.name).trim();
       if(!emailOk(grade.teacherEmail)&&emailOk(contact?.email))grade.teacherEmail=String(contact.email).trim();
+    }
+
+    const missingGrades=data.grades.filter(grade=>
+      !emailOk(grade.teacherEmail)&&focusTeacherLookupName(grade.teacher)
+    );
+
+    if(missingGrades.length){
+      const fallbackPage=await context.newPage();
+      try{
+        const cache=new Map();
+        for(const grade of missingGrades){
+          const lookup=focusTeacherLookupName(grade.teacher);
+          if(!lookup)continue;
+          let email=cache.get(lookup.toLowerCase());
+          if(email===undefined){
+            email=await browardDirectoryEmailBrowser(fallbackPage,lookup);
+            cache.set(lookup.toLowerCase(),email||"");
+          }
+          if(emailOk(email))grade.teacherEmail=String(email).trim();
+        }
+      }finally{
+        await fallbackPage.close().catch(()=>{});
+      }
     }
   }
   if(canvasMeta.activity.length){
