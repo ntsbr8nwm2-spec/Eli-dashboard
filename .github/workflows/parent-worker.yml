@@ -1,5 +1,6 @@
 # GPA is collected with the Focus grade run.
 # Matrix slots lease unique school logins; successful syncs fan out to duplicate dashboard rows.
+# Canvas diagnostics include per-course assignment/submission counts for troubleshooting.
 name: Parent dashboard worker
 
 on:
