@@ -486,6 +486,30 @@ async function canvasIdentityAndActivity(page){
         }
       }
 
+      const courseStats=assignmentGroups.map(group=>{
+        const rows=Array.isArray(group.assignments)?group.assignments:[];
+        let submitted=0,graded=0,missing=0,withSubmission=0;
+        for(const a of rows){
+          const sub=a?.submission||null;
+          if(sub){
+            withSubmission++;
+            const state=String(sub.workflow_state||"").toLowerCase();
+            if(sub.submitted_at||state==="submitted"||state==="pending_review"||state==="graded")submitted++;
+            if(state==="graded"||sub.graded_at||sub.score!==null&&sub.score!==undefined&&sub.score!=="")graded++;
+            if(sub.missing)missing++;
+          }
+        }
+        return {
+          courseId:group.courseId,
+          course:clean(courseMap[group.courseId]||""),
+          assignments:rows.length,
+          withSubmission,
+          submitted,
+          graded,
+          missing
+        };
+      });
+
       const activity=[];
       const activityTimes={};
       if(Array.isArray(stream)){
@@ -589,10 +613,10 @@ async function canvasIdentityAndActivity(page){
         }
       }
       activity.sort((a,b)=>(activityTimes[b]||0)-(activityTimes[a]||0));
-      return {firstName,activity,teacherContacts,schoolName,schoolCandidates};
+      return {firstName,activity,teacherContacts,schoolName,schoolCandidates,courseStats};
     });
   }catch{
-    return {firstName:"",activity:[],teacherContacts:[],schoolName:"",schoolCandidates:[]};
+    return {firstName:"",activity:[],teacherContacts:[],schoolName:"",schoolCandidates:[],courseStats:[]};
   }
 }
 
@@ -609,6 +633,11 @@ try{
   if(!(await ensureCanvas(page)))throw new Error("Canvas authentication timed out.");
   const canvasMeta=await canvasIdentityAndActivity(page);
   if(canvasMeta.firstName)log(`Canvas identified student first name as ${canvasMeta.firstName}.`);
+  if(Array.isArray(canvasMeta.courseStats)){
+    for(const stat of canvasMeta.courseStats){
+      log(`Canvas course stats: ${stat.course||stat.courseId} | assignments=${stat.assignments} submissions=${stat.submitted} graded=${stat.graded} missing=${stat.missing} submissionRecords=${stat.withSubmission}`);
+    }
+  }
   if(canvasMeta.schoolName)log(`Canvas school context: ${canvasMeta.schoolName}.`);
   else if(Array.isArray(canvasMeta.schoolCandidates)&&canvasMeta.schoolCandidates.length)log(`Canvas school candidates: ${canvasMeta.schoolCandidates.join(" | ")}.`);
   if(Array.isArray(canvasMeta.teacherContacts)&&canvasMeta.teacherContacts.some(contact=>!validEmail(contact?.email)&&contact?.name)){
