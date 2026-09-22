@@ -479,6 +479,47 @@ async function scrapeGrades(page, navigate = true) {
   return { schoolYear: currentSchoolYear(), courses: [] };
 }
 
+async function inspectCurrentGradeLinks(page,currentCourses=[]){
+  const courseNames=(Array.isArray(currentCourses)?currentCourses:[])
+    .map(c=>String(c?.course||"").replace(/\s+/g," ").trim())
+    .filter(Boolean);
+
+  await gotoSafe(page,GRADES_URL);
+  await sleep(1200);
+
+  const frames=[];
+  for(const frame of page.frames()){
+    try{
+      const rows=await frame.evaluate(({courseNames})=>{
+        const clean=value=>String(value||"").replace(/\s+/g," ").trim();
+        return [...document.querySelectorAll("tr")].map((tr,index)=>{
+          const cells=[...tr.querySelectorAll("th,td")].map(cell=>clean(cell.innerText||cell.textContent||""));
+          const text=clean(cells.join(" | "));
+          const matchingCourses=courseNames.filter(name=>text.toLowerCase().includes(name.toLowerCase()));
+          if(!matchingCourses.length)return null;
+          const links=[...tr.querySelectorAll("a[href]")].map(a=>({
+            text:clean(a.innerText||a.textContent||a.getAttribute("title")||""),
+            href:String(a.href||"")
+          })).filter(x=>x.href);
+          const clickers=[...tr.querySelectorAll("[onclick]")].map(el=>({
+            text:clean(el.innerText||el.textContent||el.getAttribute("title")||""),
+            onclick:String(el.getAttribute("onclick")||"").slice(0,500)
+          }));
+          return {
+            index,
+            matchingCourses,
+            cells:cells.map(v=>v.slice(0,180)),
+            links,
+            clickers
+          };
+        }).filter(Boolean);
+      },{courseNames});
+      if(rows.length)frames.push({url:safeURLParts(frame.url()),rows});
+    }catch{}
+  }
+  return {at:new Date().toISOString(),page:safeURLParts(page.url()),frames};
+}
+
 async function inspectDetailedGradebook(page, currentCourses=[]) {
   const courseNames=(Array.isArray(currentCourses)?currentCourses:[])
     .map(c=>String(c?.course||"").replace(/\s+/g," ").trim())
@@ -833,8 +874,13 @@ try {
   }
 
   log(`Current-year courses parsed: ${current.courses.length}.`);
-  const focusGradebookDiagnostics = await inspectDetailedGradebook(page,current.courses);
-  log(`Detailed Focus gradebook inspected across ${focusGradebookDiagnostics.frames.length} frame(s).`);
+  const focusCurrentGradeDiagnostics = await inspectCurrentGradeLinks(page,current.courses);
+  const focusDetailedGradeDiagnostics = await inspectDetailedGradebook(page,current.courses);
+  const focusGradebookDiagnostics = {
+    current:focusCurrentGradeDiagnostics,
+    details:focusDetailedGradeDiagnostics
+  };
+  log(`Focus grade links inspected across ${focusCurrentGradeDiagnostics.frames.length} current-grade frame(s).`);
   const gpa = await scrapeGpa(page);
   if (gpa.cumulativeGpa) log(`GPA parsed: ${gpa.cumulativeGpa} from ${gpa.source?.path || "Focus"}.`);
   else log("Cumulative GPA was not readable on this Focus page.");
