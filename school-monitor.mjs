@@ -3,6 +3,8 @@ import fs from "node:fs/promises";
 
 const GRADES_URL =
   "https://browardschools.focusschoolsoftware.com/focus/Modules.php?force_package=SIS&modname=Grades/StudentRCGrades.php&details=false";
+const GRADE_DETAILS_URL =
+  "https://browardschools.focusschoolsoftware.com/focus/Modules.php?force_package=SIS&modname=Grades/StudentRCGrades.php&details=true";
 
 const USERNAME = process.env.BCPS_USERNAME || "";
 const PASSWORD = process.env.BCPS_PASSWORD || "";
@@ -477,6 +479,52 @@ async function scrapeGrades(page, navigate = true) {
   return { schoolYear: currentSchoolYear(), courses: [] };
 }
 
+async function inspectDetailedGradebook(page, currentCourses=[]) {
+  const courseNames=(Array.isArray(currentCourses)?currentCourses:[])
+    .map(c=>String(c?.course||"").replace(/\s+/g," ").trim())
+    .filter(Boolean);
+
+  await gotoSafe(page,GRADE_DETAILS_URL);
+  await sleep(1600);
+
+  const frames=[];
+  for(const frame of page.frames()){
+    try{
+      const details=await frame.evaluate(({courseNames})=>{
+        const clean=value=>String(value||"").replace(/\s+/g," ").trim();
+        const rows=[...document.querySelectorAll("tr")].map((tr,index)=>{
+          const cells=[...tr.querySelectorAll("th,td")].map(cell=>clean(cell.innerText||cell.textContent||""));
+          const text=clean(cells.join(" | "));
+          const matchingCourses=courseNames.filter(name=>text.toLowerCase().includes(name.toLowerCase()));
+          return {
+            index,
+            cells:cells.map(v=>v.slice(0,180)),
+            matchingCourses,
+            linkLabels:[...tr.querySelectorAll("a,button")].map(el=>clean(el.innerText||el.textContent||el.getAttribute("title")||"")).filter(Boolean).slice(0,12)
+          };
+        }).filter(row=>row.cells.some(Boolean));
+
+        return {
+          title:document.title||"",
+          bodyLength:String(document.body?.innerText||"").length,
+          tableCount:document.querySelectorAll("table").length,
+          rows:rows.slice(0,220)
+        };
+      },{courseNames});
+      frames.push({
+        url:safeURLParts(frame.url()),
+        ...details
+      });
+    }catch{}
+  }
+
+  return {
+    at:new Date().toISOString(),
+    page:safeURLParts(page.url()),
+    frames
+  };
+}
+
 async function readGpaFromFrames(page) {
   for (const frame of page.frames()) {
     try {
@@ -711,7 +759,7 @@ function buildDashboardGrades(courses, oldData) {
   return { grades, changeCount };
 }
 
-async function writeDashboard(current, gpa = {}) {
+async function writeDashboard(current, gpa = {}, focusGradebookDiagnostics = null) {
   const old = await readDashboard();
   const { grades, changeCount } = buildDashboardGrades(current.courses, old);
 
@@ -726,7 +774,8 @@ async function writeDashboard(current, gpa = {}) {
     assignments: Array.isArray(old.assignments) ? old.assignments : [],
     activityStatus: old.activityStatus || "Nothing new",
     activity: Array.isArray(old.activity) ? old.activity : [],
-    message: old.message || ""
+    message: old.message || "",
+    focusGradebookDiagnostics: focusGradebookDiagnostics || old.focusGradebookDiagnostics || null
   };
 
   await fs.writeFile(DATA_PATH, JSON.stringify(data, null, 2) + "\n", "utf8");
@@ -784,10 +833,12 @@ try {
   }
 
   log(`Current-year courses parsed: ${current.courses.length}.`);
+  const focusGradebookDiagnostics = await inspectDetailedGradebook(page,current.courses);
+  log(`Detailed Focus gradebook inspected across ${focusGradebookDiagnostics.frames.length} frame(s).`);
   const gpa = await scrapeGpa(page);
   if (gpa.cumulativeGpa) log(`GPA parsed: ${gpa.cumulativeGpa} from ${gpa.source?.path || "Focus"}.`);
   else log("Cumulative GPA was not readable on this Focus page.");
-  await writeDashboard(current, gpa);
+  await writeDashboard(current, gpa, focusGradebookDiagnostics);
   await fs.rm(DEBUG_PATH, { force: true }).catch(() => {});
   log("Unattended Focus check completed successfully.");
 } catch (error) {
